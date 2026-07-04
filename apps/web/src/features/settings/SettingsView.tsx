@@ -56,6 +56,7 @@ export function SettingsView({ live }: { live: boolean }) {
       value: canvasAvail ? (theme.canvasWarp ? "on" : "off") : "unavailable",
       ...(canvasAvail ? { cycle: theme.toggleCanvasWarp } : {}),
     },
+    { label: "HDR BLOOM", value: theme.hdr ? "on" : "off", cycle: theme.toggleHdr },
     { label: "BOOT SEQUENCE", value: theme.bootMini ? "mini" : "full", cycle: theme.toggleBootMini },
     { label: "SOUND", value: sound.enabled ? "on" : "off", cycle: sound.toggle },
     { label: "AUTH", value: config?.auth.mode ?? "…" },
@@ -98,7 +99,8 @@ export function SettingsView({ live }: { live: boolean }) {
         {rows.map((row, i) => {
           const isSel = i === sel;
           const readonly = !row.cycle;
-          const value = `‹ ${row.value} ›`;
+          // read-only rows show a plain value — no ‹ › cycle brackets that imply it's editable
+          const value = readonly ? `  ${row.value}` : `‹ ${row.value} ›`;
           const dots = Math.max(2, LEADER_W - LABEL_W - value.length);
           return (
             <button

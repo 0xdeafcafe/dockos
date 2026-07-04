@@ -34,9 +34,11 @@ export interface ServerSettings {
   dockerHost: string | undefined;
   composeFile: string | undefined;
   prometheusUrl: string | undefined;
+  hostMemQuery: string | undefined;
   statsIntervalMs: number;
   logLevel: string;
   metricsEnabled: boolean;
+  cveEnabled: boolean;
   readOnly: boolean;
   capabilities: {
     restart: boolean;
@@ -71,9 +73,12 @@ export function loadSettings(env: NodeJS.ProcessEnv): ServerSettings {
     dockerHost: env.DOCKER_HOST,
     composeFile: env.DOCKOS_COMPOSE_FILE,
     prometheusUrl: env.DOCKOS_PROMETHEUS_URL?.trim() || undefined,
+    // override the host memory % PromQL (default: cadvisor root-cgroup working-set / machine mem)
+    hostMemQuery: env.DOCKOS_HOST_MEM_QUERY?.trim() || undefined,
     statsIntervalMs: parseInterval(env.DOCKOS_STATS_INTERVAL_MS),
     logLevel: env.DOCKOS_LOG_LEVEL ?? env.LOG_LEVEL ?? "info",
     metricsEnabled: parseBool(env.DOCKOS_METRICS, true),
+    cveEnabled: parseBool(env.DOCKOS_CVE, false),
     readOnly: parseBool(env.DOCKOS_READ_ONLY, false),
     capabilities: {
       restart: parseBool(env.DOCKOS_ALLOW_RESTART, true),
@@ -99,5 +104,6 @@ export function clientConfig(settings: ServerSettings): ServerConfig {
       loginUrl: settings.authMode === "oidc" ? "/auth/login" : null,
     },
     metrics: settings.metricsEnabled,
+    cve: settings.cveEnabled,
   };
 }

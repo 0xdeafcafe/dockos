@@ -9,15 +9,19 @@ import type {
   SerializedError,
 } from "@dockos/contract";
 import {
+  detailFor,
   envFor,
   FLEET,
   HOST,
   HOST_HISTORY,
+  IMAGES,
   PROFILES,
   seedLogLines,
   tickContainer,
+  VOLUMES,
 } from "../data/mock.ts";
 import type { Container } from "../data/mock.ts";
+import { DEMO } from "../demo.ts";
 
 // The docking RPC client. One typed `rpc(method, params)` call → `POST /rpc/<method>` with the
 // params as the JSON body, parsing the `{ ok, data } | { ok, error }` envelope (see
@@ -30,9 +34,10 @@ import type { Container } from "../data/mock.ts";
 // prefixes the request URL (empty string → same origin, which is how the SPA is served).
 
 const API_BASE: string = import.meta.env.VITE_API_BASE ?? "";
-// Default true "for now" — the app must work before the server is wired up. Only an explicit
-// "false" turns HTTP on.
-const USE_MOCK: boolean = (import.meta.env.VITE_USE_MOCK ?? "true") !== "false";
+// The GitHub Pages demo has no backend to reach, so it ALWAYS routes to the mock — VITE_USE_MOCK
+// can't turn HTTP on there. Otherwise the flag decides: default true "for now" (the app must work
+// before the server is wired up), and only an explicit "false" turns HTTP on.
+const USE_MOCK: boolean = DEMO || (import.meta.env.VITE_USE_MOCK ?? "true") !== "false";
 
 export interface RpcOptions {
   signal?: AbortSignal;
@@ -75,6 +80,8 @@ export async function rpc<M extends MethodName>(
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(params ?? {}),
+    // send the HttpOnly session cookie — the server now enforces auth on every non-public method
+    credentials: "same-origin",
     ...(opts.signal ? { signal: opts.signal } : {}),
   });
 
@@ -134,6 +141,7 @@ const MOCK_CONFIG: ConfigGetResult = {
   ui: { density: "comfortable" },
   auth: { mode: "dev", loginUrl: null },
   metrics: true,
+  cve: true,
 };
 
 const MOCK_SESSION: AuthSessionResult = {
@@ -171,6 +179,73 @@ function hostHistTick(): { cpu: number[]; mem: number[] } {
   return mockHostHist;
 }
 
+// A small fake container filesystem so the demo's FILES tab can actually be BROWSED — every dir
+// resolves to its own listing, so clicking into config/ data/ certs/ works. Unknown paths read as
+// empty. (Real deploys read the container over the archive API.)
+const MOCK_FS: Record<string, { name: string; type: "dir" | "file"; size: number }[]> = {
+  "/": [
+    { name: "config", type: "dir", size: 0 },
+    { name: "data", type: "dir", size: 0 },
+    { name: "app.log", type: "file", size: 48213 },
+    { name: "entrypoint.sh", type: "file", size: 512 },
+  ],
+  "/config": [
+    { name: "settings.yaml", type: "file", size: 2048 },
+    { name: "logging.conf", type: "file", size: 640 },
+    { name: "certs", type: "dir", size: 0 },
+  ],
+  "/config/certs": [
+    { name: "fullchain.pem", type: "file", size: 3821 },
+    { name: "privkey.pem", type: "file", size: 1704 },
+  ],
+  "/data": [
+    { name: "app.db", type: "file", size: 1048576 },
+    { name: "uploads", type: "dir", size: 0 },
+    { name: "backups", type: "dir", size: 0 },
+  ],
+  "/data/uploads": [
+    { name: "poster-01.jpg", type: "file", size: 245113 },
+    { name: "poster-02.jpg", type: "file", size: 198442 },
+  ],
+  "/data/backups": [
+    { name: "2026-07-01.tar.gz", type: "file", size: 8830112 },
+    { name: "2026-07-02.tar.gz", type: "file", size: 8912344 },
+  ],
+};
+const MOCK_FILE_TEXT: Record<string, string> = {
+  "/entrypoint.sh": '#!/bin/sh\nset -e\n\necho "starting ${APP_NAME:-service}"\nexec "$@"\n',
+  "/config/settings.yaml": "server:\n  host: 0.0.0.0\n  port: 8080\nlog_level: info\ntls:\n  enabled: true\n",
+  "/config/logging.conf": "[loggers]\nkeys=root\n\n[handler_console]\nclass=StreamHandler\nlevel=INFO\n",
+  "/config/certs/fullchain.pem":
+    "-----BEGIN CERTIFICATE-----\nMIIB2z…mock…demo…not…a…real…key…CCAf8wDQYJ\n-----END CERTIFICATE-----\n",
+  "/app.log":
+    "2026-07-04T05:12:03Z INFO  starting up\n2026-07-04T05:12:04Z INFO  listening on :8080\n2026-07-04T05:12:09Z WARN  slow query 214ms\n2026-07-04T05:13:41Z INFO  gc pause 4ms\n",
+};
+// normalise the requested path to leading-slash / no-trailing-slash so the map lookups are stable
+function fsPath(p: string): string {
+  const withLead = p.startsWith("/") ? p : `/${p}`;
+  return withLead.replace(/\/+$/, "") || "/";
+}
+const BINARY_FILE = /\.(jpg|jpeg|png|gif|gz|zip|tar|db|bin|woff2?)$/i;
+
+// realistic-looking image ids + ages so the demo's image INSPECT reads like a real registry audit
+// (the Image type carries id + age; the base IMAGES fixtures omit them, so fill them here)
+const MOCK_IMAGE_IDS = [
+  "a1b2c3d4e5f6",
+  "b7c8d9e0f1a2",
+  "c3d4e5f6a7b8",
+  "d9e0f1a2b3c4",
+  "e5f6a7b8c9d0",
+  "f1a2b3c4d5e6",
+  "0a1b2c3d4e5f",
+  "1b2c3d4e5f60",
+  "2c3d4e5f6071",
+  "3d4e5f607182",
+  "4e5f60718293",
+  "5f6071829304",
+];
+const MOCK_IMAGE_AGES = ["6d", "3w", "8d", "12d", "5w", "2d", "3d", "4mo", "9d", "18d", "11d", "6mo"];
+
 const mockHandlers: MockHandlers = {
   "health.ping": () => ({ pong: true, at: Date.now() }),
   "auth.session": () => MOCK_SESSION,
@@ -188,10 +263,65 @@ const mockHandlers: MockHandlers = {
   }),
   "containers.logs": (params) => ({ lines: seedLogLines(params.tail ?? 50) }),
   "containers.env": (params) => ({ env: envFor(nameOfId(params.id)) }),
+  "containers.inspect": (params) => {
+    const list = fleetTick();
+    const c = list.find((x) => x.id === params.id);
+    const base = c
+      ? detailFor(c)
+      : { image: "—", created: "—", restart: "no", health: "—", ip: "—", ports: [], mounts: [], networks: [] };
+    const peers = c
+      ? list
+          .filter((x) => x.stack === c.stack && x.id !== c.id)
+          .slice(0, 3)
+          .map((x) => ({ name: x.name, reason: `net · ${c.stack}_default` }))
+      : [];
+    const registers = [
+      { label: "PIDS", value: "14" },
+      { label: "NET", value: "↓ 18.4G · ↑ 2.1G" },
+      { label: "BLKIO", value: "r 402M · w 1.2G" },
+      { label: "THROTTLED", value: "0.4%" },
+      { label: "RESTARTS", value: "2" },
+      { label: "OOM KILLED", value: "no" },
+    ];
+    return { ...base, peers, registers };
+  },
+  "containers.files": (params) => {
+    const path = fsPath(params.path || "/");
+    return { path, entries: MOCK_FS[path] ?? [], truncated: false };
+  },
+  "containers.file": (params) => {
+    const path = fsPath(params.path);
+    const binary = BINARY_FILE.test(path);
+    return {
+      path: params.path,
+      content: binary
+        ? ""
+        : (MOCK_FILE_TEXT[path] ??
+          `# ${params.path}\n# mock preview — the real browse reads the container via the archive API\nKEY=value\n`),
+      truncated: false,
+      binary,
+    };
+  },
+  "containers.compose": (params) => {
+    const c = fleetTick().find((x) => x.id === params.id);
+    const name = c?.name ?? "service";
+    return {
+      service: name,
+      yaml: `  ${name}:\n    image: example/${name}:latest\n    restart: unless-stopped\n    networks:\n      - default\n    # mock — the real view reads the compose file the container was created from`,
+    };
+  },
   "stacks.list": () => ({ stacks: PROFILES }),
   "stacks.up": (params) => ({ name: params.name, started: [], skipped: [] }),
   "stacks.down": (params) => ({ name: params.name, stopped: [], skipped: [] }),
   "networks.list": () => ({ networks: MOCK_NETWORKS }),
+  "images.list": () => ({
+    images: IMAGES.map((img, i) => ({
+      ...img,
+      id: MOCK_IMAGE_IDS[i] ?? `abcdef${String(i).padStart(6, "0")}`,
+      age: MOCK_IMAGE_AGES[i] ?? "—",
+    })),
+  }),
+  "volumes.list": () => ({ volumes: VOLUMES }),
   "host.info": () => HOST,
   "metrics.host": () => ({ cpu: HOST.cpu, mem: 70, memText: HOST.memText, disk: HOST.disk }),
   "metrics.hostHistory": () => hostHistTick(),

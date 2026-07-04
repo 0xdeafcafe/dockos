@@ -34,3 +34,24 @@
 .imgrow--pulse {
   animation: strow-pulse 620ms steps(3);
 }
+
+/* INSPECT: a framed register strip below the table showing the selected image's real fields */
+.imgdetail {
+  margin-top: 1lh;
+}
+.imgdetail__row {
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+  color: var(--text);
+}
+.imgdetail__close {
+  white-space: pre;
+  color: var(--dim);
+  margin-top: 1lh;
+}
+.imgdetail__close:hover,
+.imgdetail__close:focus-visible {
+  background: var(--accent);
+  color: var(--bg);
+}

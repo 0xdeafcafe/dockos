@@ -35,6 +35,17 @@
 .netzone--dim {
   opacity: 0.32;
 }
+/* internal networks (no external route) are marked distinctly — a warn-toned title */
+.netzone--internal .netzone__title {
+  color: var(--warn);
+}
+/* no networks yet / still scanning */
+.netzone__empty {
+  grid-column: 1 / -1;
+  align-self: center;
+  justify-self: center;
+  color: var(--dim);
+}
 .netzone > * {
   flex: 1;
   min-height: 0;
@@ -42,6 +53,27 @@
 /* the keyboard cursor and the pointer speak one language: focused zone = inverse title */
 .netzone__title:hover,
 .netzone__title:focus-visible {
+  background: var(--accent);
+  color: var(--bg);
+}
+/* collapsed large-net summary: [↵ EXPAND] fills the row, a distinct [INSPECT ▸] jumps-to-fleet */
+.netzone__collapsed {
+  display: flex;
+  align-items: baseline;
+  gap: 0 2ch;
+  padding: 1lh 0;
+}
+.netzone__expand {
+  flex: 1;
+  color: var(--text);
+}
+.netzone__inspect,
+.netzone__collapse {
+  color: var(--dim);
+}
+.netzone__expand:hover,
+.netzone__inspect:hover,
+.netzone__collapse:hover {
   background: var(--accent);
   color: var(--bg);
 }
@@ -99,13 +131,32 @@
   color: var(--dim);
 }
 /* one restrained scheme: everything dim, the focused area's flows brighten to text/accent —
-   no per-type rainbow. The sealed VPN crossing is the only one that earns a colour (warn). */
+   no per-type rainbow. A link touching an internal network is the only one that earns a colour (warn). */
 .nbedge--off {
   opacity: 0.55;
 }
 .nbedge--on {
   color: var(--text);
 }
-.nbedge--on.nbedge--vpn {
+.nbedge--on.nbedge--internal {
   color: var(--warn);
+}
+
+/* ─── RESPONSIVE ─── the two-up zone grid collapses to a single column so every area
+   gets the full width; wide box-art pans sideways; the legend + boundary rail wrap */
+@media (max-width: 900px) {
+  .network__zones {
+    grid-template-columns: 1fr;
+  }
+  .netzone__art-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .network__legend {
+    height: auto;
+    white-space: normal;
+  }
+  .network__boundaries {
+    height: auto;
+  }
 }

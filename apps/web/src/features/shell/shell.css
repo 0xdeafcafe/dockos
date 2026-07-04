@@ -3,8 +3,9 @@
   inset: 0;
   display: flex;
   flex-direction: column;
-  /* vertical breathing so the status bar and command line clear the tube's curved edges */
-  padding: 0.5lh 1ch;
+  /* vertical breathing so the status bar and command line clear the tube's curved edges;
+     tight on x now that the bezel shadow frames the sides */
+  padding: 0.5lh 0.25ch;
   /* very-wide displays: cap the raster and center the tube rather than stretching tables thin */
   max-width: 176ch;
   margin: 0 auto;
@@ -173,11 +174,6 @@
   background: var(--accent);
   color: var(--bg);
 }
-.nav__sep {
-  color: var(--dim);
-  opacity: 0.5;
-  user-select: none;
-}
 /* a unit is unhealthy: the CONTAINERS deck item flickers red until you look or silence */
 .nav__item--alert {
   color: var(--err);
@@ -269,4 +265,69 @@
 .placeholder__pong:focus-visible {
   background: var(--accent);
   color: var(--bg);
+}
+
+/* ─── RESPONSIVE ───────────────────────────────────────────────────────────────
+   The deck was cut for a wide desktop tube: a 20ch side rail beside a ~90ch table.
+   Media queries can't read ch, so breakpoints are px. Two tiers:
+   · COMPACT (≤900px ≈ 107ch) — the side rail + a full table no longer both fit, so
+     the rail folds ABOVE the main pane as a slim horizontal strip and the pane runs
+     full width. Bars wrap instead of clipping their tail (the clock / ⌘K live there).
+   · PHONE (≤560px ≈ 66ch) — shed the non-essential segments (host vitals, the
+     accent/CRT/sound/sign-out toggles, the legend crumb + stamp) and tighten the
+     tube's padding. Brand · alert · ⌘K · clock always survive. */
+@media (max-width: 900px) {
+  /* nav folds on top; main takes the whole width */
+  .shell__mid {
+    flex-direction: column;
+    gap: 0.5lh 1ch;
+  }
+  .shell__nav {
+    width: 100%;
+    flex: none;
+  }
+  /* the DECK pane shrinks to its content (no longer a full-height rail) … */
+  .shell__nav .ink-box--fill {
+    flex: none;
+  }
+  /* … and its seven decks run as a wrapping horizontal menu, not a stacked column */
+  .shell__nav nav {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 0 2ch;
+  }
+  .shell__nav .nav__item {
+    display: inline-block;
+    width: auto;
+  }
+
+  /* bars wrap rather than pushing the clock / ⌘K off the right edge into the clip */
+  .statusbar,
+  .keybar {
+    flex-wrap: wrap;
+    height: auto;
+    overflow: visible;
+    row-gap: 0;
+  }
+  /* the breadcrumb (echoed in the pane title) + version stamp are the first to fold away */
+  .keybar__spacer,
+  .keybar__crumb,
+  .keybar__stamp {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  /* host vitals go — they live in full on the SYSTEM deck */
+  .statusbar__meta {
+    display: none;
+  }
+  /* keep only ⌘K; accent / CRT / sound / sign-out are all reachable via the palette */
+  .statusbar__cluster .statusbar__btn:not(:first-child) {
+    display: none;
+  }
+  /* claw back the last columns of the tube */
+  .shell {
+    padding: 0.5lh 0.5ch;
+  }
 }

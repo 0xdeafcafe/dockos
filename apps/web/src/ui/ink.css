@@ -37,7 +37,7 @@
 /* the classic terminal cursor: solid beat, then quick phosphor decay */
 .ink-cursor {
   color: var(--accent);
-  text-shadow: 0 0 7px var(--glow);
+  text-shadow: 0 0 3px var(--glow);
   animation: ink-cursor 1.12s infinite;
 }
 @keyframes ink-cursor {
@@ -139,7 +139,7 @@
   flex-direction: column;
 }
 .ink-box__body--pad {
-  padding: 0 1ch;
+  padding: 0.5lh 2ch;
 }
 
 /* terminal scroller: wheel moves whole lines; ░█ column shows position */
@@ -290,47 +290,44 @@
   }
 }
 
-/* the SUPERHOT [Y/N] beat — an inline red strip that replaces the action bar */
-.ink-confirm {
-  display: flex;
-  gap: 2ch;
-  white-space: pre;
-  height: 1lh;
-  overflow: hidden;
-  color: var(--err);
-  animation: ink-confirm-in 160ms steps(2) both;
-}
-.ink-confirm__q {
-  background: var(--err);
-  color: var(--bg);
-  font-weight: 700;
-}
-.ink-confirm .ink-act__key {
-  color: var(--err);
-}
-.ink-confirm .ink-act:hover,
-.ink-confirm .ink-act:focus-visible {
-  background: var(--err);
-  color: var(--bg);
-}
-@keyframes ink-confirm-in {
-  0% {
-    opacity: 0;
-    transform: translateX(2ch);
-  }
-}
-
 .ink-spark {
   white-space: pre;
 }
 .ink-bar {
   white-space: pre;
 }
+
+/* ─── RESPONSIVE ───────────────────────────────────────────────────────────────
+   Below the compact breakpoint every TermScroll pane (tables, logs, code/yaml, the
+   file preview) may PAN horizontally inside its own pane instead of clipping a row
+   mid-column. Each line is sized to its content but never narrower than the pane, so
+   the full-width inverse selection bar still spans the row. The wheel handler keeps
+   owning the vertical axis (overflow-y stays off). */
+@media (max-width: 900px) {
+  .ink-scroll__lines {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .ink-scroll__line {
+    overflow: visible;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  /* every glyph-joined bar folds to as many rows as it needs rather than clipping the
+     rightmost controls — on touch these buttons ARE the only way to fire the action */
+  .ink-actionbar {
+    flex-wrap: wrap;
+    height: auto;
+    overflow: visible;
+    row-gap: 0;
+  }
+}
 .ink-dot--up {
-  text-shadow: 0 0 6px currentColor;
+  text-shadow: 0 0 3px currentColor;
 }
 .ink-dot--unhealthy {
-  text-shadow: 0 0 8px currentColor;
+  text-shadow: 0 0 4px currentColor;
   animation: ink-pulse 1.1s ease-in-out infinite;
 }
 @keyframes ink-pulse {

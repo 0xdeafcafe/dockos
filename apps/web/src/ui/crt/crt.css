@@ -48,10 +48,10 @@
 :root[data-crt="full"] .crt__content,
 :root[data-crt="lite"] .crt__content {
   text-shadow:
-    -0.4px 0 rgba(255, 80, 80, 0.26),
-    0.4px 0 rgba(90, 150, 255, 0.26),
-    0 0 1.5px currentColor,
-    0 0 6px var(--glow);
+    -0.4px 0 rgba(255, 80, 80, 0.2),
+    0.4px 0 rgba(90, 150, 255, 0.2),
+    0 0 1px currentColor,
+    0 0 2px var(--glow);
 }
 :root[data-crt="full"] .crt__content b,
 :root[data-crt="lite"] .crt__content b,
@@ -83,8 +83,14 @@
   opacity: 1;
   mix-blend-mode: difference;
   pointer-events: none;
-  z-index: 60;
+  /* above every overlay (dialogs/scrims go up to ~200) so the caret is never hidden behind one */
+  z-index: 9999;
   will-change: transform;
+}
+/* on the canvas path the caret picks up a phosphor halo too, so it blooms with the bright text
+   (drop-shadow, not box-shadow — the TUI guard forbids the latter, allows filters) */
+.crt--canvas .crt__cursor {
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px var(--glow));
 }
 
 /* slot mask: RGB triads under the scanlines, barely-there */
@@ -108,9 +114,9 @@
   background: repeating-linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0) 0 1px,
-    rgba(0, 0, 0, 0.22) 2px 3px
+    rgba(0, 0, 0, 0.4) 2px 3px
   );
-  opacity: 0.45;
+  opacity: 0.62;
 }
 /* Every continuously-animated overlay is promoted to its OWN GPU layer (translateZ) so it
    composites independently against the CACHED filtered backdrop — it never drags the barrel
@@ -123,7 +129,7 @@
   z-index: 49;
   pointer-events: none;
   filter: url(#crtNoise);
-  opacity: 0.02;
+  opacity: 0.012;
   animation: crt-grain 640ms steps(4) infinite;
   transform: translateZ(0);
   will-change: transform, opacity;
@@ -153,12 +159,25 @@
   /* NO mix-blend-mode. A blend layer reads the filtered backdrop, so its continuously
      drifting blob forced the barrel filter to re-run EVERY frame — the "always laggy".
      Plain alpha composites against the cached filter texture: free. */
+  /* the fixed sheen: a broad curved specular band hugging the upper-left + a hard, narrow window
+     streak at ~24°. Plain light gradients (curve echoes the barrel), overall faded to 0.55 below. */
+  background:
+    radial-gradient(130% 90% at 22% 2%, rgba(255, 255, 255, 0.07), transparent 55%),
+    linear-gradient(24deg, transparent 37%, rgba(255, 255, 255, 0.035) 41%, transparent 45%);
   opacity: 0;
   animation: crt-reflect-in 1.4s ease-in 1.7s both;
   transform: translateZ(0);
   will-change: transform, opacity;
 }
+/* the drifting room-light blob — a soft glare pool crossing the glass (viewer/room moving). Sized in
+   px to match crt-blob's px translate path; top/left anchored so the keyframe transform positions it. */
 .crt__blob {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 420px;
+  height: 340px;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05), transparent 60%);
   animation: crt-blob 45s ease-in-out infinite;
   will-change: transform;
 }
@@ -175,9 +194,13 @@
   /* tube falloff PLUS an edge-hugging inner darken: fades the rounded clip line into the
      bezel so the border-radius reads as glass curvature, not a hard cut */
   background:
-    radial-gradient(135% 135% at 50% 50%, transparent 46%, rgba(0, 0, 0, 0.9) 100%),
-    linear-gradient(to right, rgba(0, 0, 0, 0.6), transparent 2%, transparent 98%, rgba(0, 0, 0, 0.6)),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 1.6%, transparent 98.4%, rgba(0, 0, 0, 0.55));
+    radial-gradient(circle at 0% 0%, rgba(0, 0, 0, 0.62), transparent 14%),
+    radial-gradient(circle at 100% 0%, rgba(0, 0, 0, 0.62), transparent 14%),
+    radial-gradient(circle at 0% 100%, rgba(0, 0, 0, 0.62), transparent 14%),
+    radial-gradient(circle at 100% 100%, rgba(0, 0, 0, 0.62), transparent 14%),
+    radial-gradient(135% 135% at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.88) 100%),
+    linear-gradient(to right, rgba(0, 0, 0, 0.72) 0, transparent 4%, transparent 96%, rgba(0, 0, 0, 0.72) 100%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.68) 0, transparent 3%, transparent 97%, rgba(0, 0, 0, 0.68) 100%);
 }
 .crt__flick {
   position: absolute;
@@ -275,6 +298,16 @@
 :root[data-crt="full"] .crt__reflect,
 :root[data-crt="full"] .crt__flick,
 :root[data-crt="full"] .crt__glitch {
+  display: block;
+}
+/* CANVAS mode gets the animated glass life (grain/sweep/flicker/glitch) regardless of fidelity —
+   they composite cheaply over the GPU texture. This is the CRT behaviour that was lost in the
+   rewrite, now brought to the canvas path. */
+.crt--canvas .crt__grain,
+.crt--canvas .crt__sweep,
+.crt--canvas .crt__reflect,
+.crt--canvas .crt__flick,
+.crt--canvas .crt__glitch {
   display: block;
 }
 
@@ -434,6 +467,20 @@
   }
   96% {
     opacity: 0;
+  }
+}
+
+/* ─── RESPONSIVE ─── a phone-sized tube can't wear a desktop-sized bezel: pull the
+   glass curvature in and shrink the content inset so the 40px corner radius doesn't
+   eat the first/last cells of every row. Percent insets already scale; the radius is
+   the one absolute unit that has to step down. */
+@media (max-width: 560px) {
+  .crt__content {
+    inset: 0.8% 0.6%;
+  }
+  :root[data-crt="lite"] .crt__screen,
+  :root[data-crt="full"] .crt__screen {
+    border-radius: 14px / 18px !important;
   }
 }
 

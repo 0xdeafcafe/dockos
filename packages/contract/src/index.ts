@@ -7,5 +7,7 @@ export * from "./host.ts";
 export * from "./methods.ts";
 export * from "./metrics.ts";
 export * from "./networks.ts";
+export * from "./images.ts";
+export * from "./volumes.ts";
 export * from "./rpc.ts";
 export * from "./stacks.ts";

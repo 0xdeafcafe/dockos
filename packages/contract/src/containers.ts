@@ -94,3 +94,74 @@ export const ContainersEnvResult = z.object({
   env: z.array(EnvVar),
 });
 export type ContainersEnvResult = z.infer<typeof ContainersEnvResult>;
+
+// A container this one is linked to: reachable on a shared user-defined network, or a declared
+// compose dependency (from the com.docker.compose.depends_on label). `reason` explains the edge.
+export const ContainerPeer = z.object({
+  name: z.string(),
+  reason: z.string(),
+});
+export type ContainerPeer = z.infer<typeof ContainerPeer>;
+
+// The container detail panel — real inspect data plus computed peers.
+export const ContainerDetail = z.object({
+  image: z.string(),
+  created: z.string(),
+  restart: z.string(),
+  health: z.string(),
+  ip: z.string(),
+  ports: z.array(z.string()),
+  mounts: z.array(z.string()),
+  networks: z.array(z.string()),
+  peers: z.array(ContainerPeer),
+  // live unit registers (pids/net/blk/throttle from stats, restarts/oom from inspect); "—" when
+  // the unit is stopped and has no live stats
+  registers: z.array(z.object({ label: z.string(), value: z.string() })),
+});
+export type ContainerDetail = z.infer<typeof ContainerDetail>;
+
+export const ContainersInspectParams = z.object({ id: ContainerId });
+export type ContainersInspectParams = z.infer<typeof ContainersInspectParams>;
+
+export const ContainersInspectResult = ContainerDetail;
+export type ContainersInspectResult = z.infer<typeof ContainersInspectResult>;
+
+// Read-only filesystem browse via the engine archive API (docker cp out) — NO exec involved.
+export const FsEntry = z.object({
+  name: z.string(),
+  type: z.enum(["dir", "file", "link"]),
+  size: z.number(),
+});
+export type FsEntry = z.infer<typeof FsEntry>;
+
+export const ContainersFilesParams = z.object({ id: ContainerId, path: z.string().default("/") });
+export type ContainersFilesParams = z.infer<typeof ContainersFilesParams>;
+
+export const ContainersFilesResult = z.object({
+  path: z.string(),
+  entries: z.array(FsEntry),
+  truncated: z.boolean(),
+});
+export type ContainersFilesResult = z.infer<typeof ContainersFilesResult>;
+
+export const ContainersFileParams = z.object({ id: ContainerId, path: z.string() });
+export type ContainersFileParams = z.infer<typeof ContainersFileParams>;
+
+export const ContainersFileResult = z.object({
+  path: z.string(),
+  content: z.string(),
+  truncated: z.boolean(),
+  binary: z.boolean(),
+});
+export type ContainersFileResult = z.infer<typeof ContainersFileResult>;
+
+// The container's own service definition, pulled verbatim from the compose file it was created from
+// (via the com.docker.compose.service label). `service` is null / `yaml` empty for non-compose units.
+export const ContainersComposeParams = z.object({ id: ContainerId });
+export type ContainersComposeParams = z.infer<typeof ContainersComposeParams>;
+
+export const ContainersComposeResult = z.object({
+  service: z.string().nullable(),
+  yaml: z.string(),
+});
+export type ContainersComposeResult = z.infer<typeof ContainersComposeResult>;

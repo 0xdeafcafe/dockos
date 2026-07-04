@@ -36,28 +36,18 @@ export async function checkSession(): Promise<AuthOutcome> {
   }
 }
 
-// SIGN OUT: clear the app server's session, then bounce to the SSO end-session (if the
-// server hands one back) or reload — the next boot check finds no session → DENIED scene.
-// Uses a raw POST rather than the typed rpc() so it doesn't depend on `auth.signout` being in
-// the contract yet (the backend adds the method during the OIDC deploy); it degrades to a
-// reload if the endpoint isn't there.
+// SIGN OUT: ask the server for the SSO end-session URL and bounce there (that GET clears the
+// docking session cookie), else just reload — the next boot check finds no session → DENIED scene.
+// Goes through the typed rpc() transport ON PURPOSE: in the static demo that transport is the fake
+// HTTP layer backed by mock data, so sign-out resolves entirely client-side (mock hands back a null
+// redirect → reload back to the sealed console) and the demo never touches a server.
 export async function signOut(): Promise<void> {
-  const base = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
   clearDenyOverride();
   try {
-    const res = await fetch(`${base}/rpc/auth.signout`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      credentials: "include",
-      body: "{}",
-    });
-    const env: unknown = await res.json().catch(() => null);
-    const url =
-      env && typeof env === "object" && "data" in env
-        ? (env as { data?: { logoutUrl?: unknown } }).data?.logoutUrl
-        : undefined;
-    if (typeof url === "string" && url.length > 0) {
-      window.location.assign(url.startsWith("http") ? url : `${base}${url}`);
+    const { redirectUrl } = await rpc("auth.signout", {});
+    if (redirectUrl) {
+      const base = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
+      window.location.assign(redirectUrl.startsWith("http") ? redirectUrl : `${base}${redirectUrl}`);
       return;
     }
   } catch {

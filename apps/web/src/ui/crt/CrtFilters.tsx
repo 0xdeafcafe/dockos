@@ -64,6 +64,11 @@ export function CrtFilters() {
             yChannelSelector="G"
           />
         </filter>
+        {/* static phosphor grain — grayscale fractal noise the .crt__grain layer samples */}
+        <filter id="crtNoise" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
+          <feColorMatrix type="saturate" values="0" />
+        </filter>
       </defs>
     </svg>
   );

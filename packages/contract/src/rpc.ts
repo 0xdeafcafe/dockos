@@ -21,10 +21,6 @@ import { SerializedError } from "./errors.ts";
 // map). Unhandled server errors never leak stacks: they arrive as kind "internal".
 // ──────────────────────────────────────────────────────────────────────────────────────────────
 
-export function rpcSuccess<T extends z.ZodTypeAny>(data: T) {
-  return z.object({ ok: z.literal(true), data });
-}
-
 export const RpcFailure = z.object({
   ok: z.literal(false),
   error: SerializedError,

@@ -12,6 +12,16 @@ import type { MethodName, MethodParams, MethodResult } from "@dockos/contract";
 
 type Capability = keyof App["settings"]["capabilities"];
 
+// Methods callable WITHOUT an operator identity: the health probe, the client config (feature flags,
+// no secrets), and the auth endpoints the SPA uses to discover whether it's signed in. Everything
+// else requires a resolved session. Keep this list minimal.
+const PUBLIC_METHODS = new Set<MethodName>([
+  "health.ping",
+  "config.get",
+  "auth.session",
+  "auth.signout",
+]);
+
 function requireMetrics(service: MetricsQueryService | null): MetricsQueryService {
   if (!service) {
     throw new HandledError("prometheus.unreachable", "metric history is not configured", {
@@ -49,6 +59,16 @@ export function buildRpcSurface(app: App): RpcKernel {
     };
   }
 
+  // Enforce identity server-side for every non-public method. `app.auth.session` throws
+  // auth.missing/auth.expired when there's no valid operator (session cookie in oidc mode, forward
+  // header in forward mode); in dev mode it returns a local operator, so this is a no-op there. The
+  // web's ACCESS DENIED scene is driven by the public auth.session probe, so the UX is unchanged —
+  // this just moves the actual boundary from the browser onto the server.
+  kernel.setAuthGate((method, ctx) => {
+    if (PUBLIC_METHODS.has(method)) return;
+    app.auth.session(ctx.header);
+  });
+
   kernel.register("health.ping", () => ({ pong: true, at: Date.now() }));
   kernel.register("auth.session", (_params, ctx) => app.auth.session(ctx.header));
   kernel.register("auth.signout", () => app.auth.signout());
@@ -73,6 +93,10 @@ export function buildRpcSurface(app: App): RpcKernel {
     lines: await app.containers.logs(id, tail),
   }));
   kernel.register("containers.env", async ({ id }) => ({ env: await app.containers.env(id) }));
+  kernel.register("containers.inspect", async ({ id }) => await app.containers.inspect(id));
+  kernel.register("containers.files", async ({ id, path }) => await app.files.list(id, path));
+  kernel.register("containers.file", async ({ id, path }) => await app.files.read(id, path));
+  kernel.register("containers.compose", async ({ id }) => await app.containers.composeConfig(id));
 
   kernel.register("stacks.list", async () => ({ stacks: await app.stacks.list() }));
   kernel.register(
@@ -85,6 +109,8 @@ export function buildRpcSurface(app: App): RpcKernel {
   );
 
   kernel.register("networks.list", async () => ({ networks: await app.networks.list() }));
+  kernel.register("images.list", async () => ({ images: await app.images.list() }));
+  kernel.register("volumes.list", async () => ({ volumes: await app.volumes.list() }));
   kernel.register("host.info", async () => await app.host.info());
 
   // Deep history from Prometheus. Unconfigured (no DOCKOS_PROMETHEUS_URL) → prometheus.unreachable,

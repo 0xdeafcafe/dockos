@@ -17,6 +17,11 @@ export type RpcHandler<M extends MethodName> = (
   ctx: RpcContext,
 ) => MethodResult<M> | Promise<MethodResult<M>>;
 
+// Runs before every handler except the public allowlist. Throws a HandledError (auth.missing /
+// auth.expired) when the caller has no valid operator identity, so an unauthenticated request is
+// rejected at the surface — not just hidden by the SPA. See buildRpcSurface for the allowlist.
+export type AuthGate = (method: MethodName, ctx: RpcContext) => void;
+
 type AnyHandler = (params: unknown, ctx: RpcContext) => unknown;
 
 export interface RpcResponse {
@@ -33,6 +38,7 @@ export class RpcKernel {
   private readonly handlers = new Map<MethodName, AnyHandler>();
   private readonly log: Logger;
   private readonly metrics: MetricsService | null;
+  private authGate: AuthGate | null = null;
 
   constructor(log: Logger, metrics: MetricsService | null) {
     this.log = log;
@@ -41,6 +47,11 @@ export class RpcKernel {
 
   register<M extends MethodName>(method: M, handler: RpcHandler<M>): void {
     this.handlers.set(method, handler as AnyHandler);
+  }
+
+  // Install the identity check that runs for every dispatched method before its handler.
+  setAuthGate(gate: AuthGate): void {
+    this.authGate = gate;
   }
 
   async dispatch(method: string, rawParams: unknown, ctx: RpcContext): Promise<RpcResponse> {
@@ -82,6 +93,8 @@ export class RpcKernel {
     if (!handler) {
       throw new HandledError("internal", `method not wired: ${method}`, { meta: { method } });
     }
+    // Identity BEFORE input: reject an unauthenticated caller before we parse/act on their params.
+    this.authGate?.(method, ctx);
     const schema = rpcMethods[method];
     const parsed = schema.params.safeParse(rawParams ?? {});
     if (!parsed.success) {

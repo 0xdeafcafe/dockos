@@ -63,7 +63,9 @@ export function MainView({
   if (view === "fleet")
     return <FleetView api={fleetApi} active={live} preset={preset} onOpen={onOpen} />;
   if (view === "detail" && container)
-    return <DetailView container={container} api={fleetApi} live={live} onBack={onBack} />;
+    return (
+      <DetailView container={container} api={fleetApi} live={live} onBack={onBack} onOpen={onOpen} />
+    );
   if (view === "stacks") return <StacksView live={live} />;
   if (view === "system") return <SystemView live={live} />;
   if (view === "images") return <ImagesView live={live} />;

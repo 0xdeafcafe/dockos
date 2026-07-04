@@ -1,0 +1,73 @@
+name: Deploy demo to Pages
+
+# Builds the frontend-only demo (VITE_DEMO=true → mock data, fake auth, no backend) and publishes
+# it to GitHub Pages at the custom domain dockos.forbes.red.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; a newer push supersedes an in-flight run.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # @dockos/contract is consumed straight from TypeScript source (its exports point at
+      # src/index.ts), so Vite transpiles it in-line — no separate contract build step needed.
+      - name: Build demo (mock data + fake auth)
+        run: pnpm --filter @dockos/web build
+        env:
+          VITE_DEMO: "true"
+
+      - name: Custom domain + SPA fallback
+        # CNAME keeps Pages bound to dockos.forbes.red. 404.html is a copy of index.html so any
+        # deep link resolves to the SPA — the app has no URL routing today (views switch via
+        # internal state), so this is belt-and-suspenders, not load-bearing.
+        run: |
+          echo "dockos.forbes.red" > apps/web/dist/CNAME
+          cp apps/web/dist/index.html apps/web/dist/404.html
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

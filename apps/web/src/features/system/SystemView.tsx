@@ -4,8 +4,7 @@ import { ActionBar } from "../../ui/actionbar.tsx";
 import { Rule } from "../../ui/text.tsx";
 import { blockChart } from "../../ui/chart.ts";
 import { keyOwnedByWidget } from "../../ui/focus.ts";
-import { IMAGES } from "../../data/mock.ts";
-import type { ImageAudit } from "../../data/mock.ts";
+import type { Image as ImageAudit } from "@dockos/contract";
 import { useRpcQuery } from "../../rpc/hooks.ts";
 import { useSound } from "../../sound/SoundProvider.tsx";
 import "./system.css";
@@ -20,10 +19,14 @@ function pad(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1) + "…" : s.padEnd(n);
 }
 
-const HEAD = `  ${pad("IMAGE", 28)} ${pad("TAG", 12)} ${pad("CURRENT", 10)} ${pad("LATEST", 10)} ${pad("STATE", 10)} ${pad("CVE C/H/M", 10)} SIZE`;
+function headFor(showCve: boolean): string {
+  return `  ${pad("IMAGE", 28)} ${pad("TAG", 12)} ${pad("CURRENT", 10)} ${pad("LATEST", 10)} ${pad("STATE", 10)} ${
+    showCve ? pad("CVE C/H/M", 10) + " " : ""
+  }SIZE`;
+}
 
 function HostChart({ data, label, meta }: { data: number[]; label: string; meta: string }) {
-  const rows = blockChart(data, 44, 4);
+  const rows = blockChart(data, 44, 7);
   const now = Math.round(data.at(-1) ?? 0);
   return (
     <div className="system__chart">
@@ -74,10 +77,14 @@ export function SystemView({ live }: { live: boolean }) {
   const [sel, setSel] = useState(0);
   const [pulse, setPulse] = useState<string | null>(null);
   const sound = useSound();
-  const selected = IMAGES[Math.min(sel, IMAGES.length - 1)];
+  const { data: imgData } = useRpcQuery("images.list", {}, { pollMs: 5000 });
+  const images = imgData?.images ?? [];
+  const { data: cfg } = useRpcQuery("config.get", {}, {});
+  const showCve = cfg?.cve ?? false;
+  const selected = images[Math.min(sel, images.length - 1)];
 
-  const outdated = IMAGES.filter((i) => i.status === "outdated").length;
-  const withCves = IMAGES.filter((i) => i.cves.crit + i.cves.high > 0).length;
+  const outdated = images.filter((i) => i.status === "outdated").length;
+  const withCves = images.filter((i) => i.cves.crit + i.cves.high > 0).length;
 
   const act = (verb: "check" | "pull") => {
     if (!selected) return;
@@ -101,9 +108,14 @@ export function SystemView({ live }: { live: boolean }) {
 
   const above = [
     <span className="ink--dim" key="band">
-      IMAGE AUDIT · {IMAGES.length} TRACKED ·{" "}
-      <span className="ink--warn">{outdated} OUTDATED</span> ·{" "}
-      <span className="ink--err">{withCves} WITH CRIT/HIGH CVES</span>
+      IMAGE AUDIT · {images.length} TRACKED ·{" "}
+      <span className="ink--warn">{outdated} OUTDATED</span>
+      {showCve ? (
+        <>
+          {" "}
+          · <span className="ink--err">{withCves} WITH CRIT/HIGH CVES</span>
+        </>
+      ) : null}
     </span>,
     <span key="g"> </span>,
   ];
@@ -113,8 +125,8 @@ export function SystemView({ live }: { live: boolean }) {
       <HostPanel />
       <Rule tone="dim" />
       <TuiTable<ImageAudit>
-        head={HEAD}
-        rows={IMAGES}
+        head={headFor(showCve)}
+        rows={images}
         sel={sel}
         onSel={setSel}
         onOpen={() => act("check")}
@@ -122,17 +134,17 @@ export function SystemView({ live }: { live: boolean }) {
         above={above}
         renderRow={(img, isSel, i) => {
           const [glyph, tone] = STATUS[img.status];
-          const cve = cveText(img);
+          const cve = showCve ? cveText(img) : null;
           return (
             <button
-              key={img.repo}
+              key={img.id}
               className={`imrow ${isSel ? "imrow--sel" : ""} ${pulse === img.repo ? "imrow--pulse" : ""}`}
               onMouseEnter={() => setSel(i)}
               onClick={() => setSel(i)}
             >
               {isSel ? "▸" : " "} {pad(img.repo, 28)} {pad(img.tag, 12)} {pad(img.current, 10)}{" "}
               {pad(img.latest, 10)} <span className={`ink--${tone}`}>{glyph}</span>{" "}
-              <span className={cve.cls}>{cve.text}</span> {img.size}
+              {cve ? <span className={cve.cls}>{cve.text}</span> : null} {img.size}
             </button>
           );
         }}

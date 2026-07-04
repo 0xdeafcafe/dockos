@@ -36,6 +36,8 @@ uniform float u_safe;     // 0..~0.2 safe-zone inset: zoom the content in so the
                           // the edges off-screen; the freed border reads as black "glass".
 uniform float u_edge;     // inner edge-shadow band width (fraction of the screen). The CRT bezel
                           // casts a soft shadow onto the glass near the frame; 0 disables it.
+uniform float u_bloom;    // HDR bloom gain: bright glyphs glow PAST 1.0 on an extended-range
+                          // backbuffer. 0 = off (SDR-identical output).
 
 vec2 barrel(vec2 uv, float k) {
   // Divide the centred coord by (1 - u_safe) BEFORE bending: this reaches further into the texture
@@ -68,6 +70,14 @@ void main() {
   vec3 col = vec3(r, g.g * m, b);
   float a = g.a * m;
 
+  // HDR core-boost — push the ALREADY-bright glyph pixels past 1.0 (brighter-than-white on an
+  // extended-range backbuffer) with NO neighbour halo, so digits/text stay crisp instead of
+  // blooming into an unreadable blob. Clamps harmlessly to white on SDR.
+  if (u_bloom > 0.0) {
+    float lum = max(col.r, max(col.g, col.b));
+    col += col * smoothstep(0.55, 1.0, lum) * u_bloom;
+  }
+
   vec2 vc = v_uv - 0.5;
   float vig = clamp(1.0 - u_vignette * dot(vc, vc) * 2.0, 0.0, 1.0);
   col *= vig;
@@ -90,6 +100,8 @@ export interface WarpUniforms {
   safeZone: number;
   /** 0..~0.15 inner edge-shadow band — soft dark border simulating the CRT bezel's cast shadow. */
   edgeShadow: number;
+  /** HDR bloom gain (0 = off). >0 makes bright glyphs glow past 1.0 on an extended-range buffer. */
+  bloom: number;
 }
 
 export interface WarpScene {
@@ -161,6 +173,7 @@ export function createWarpScene(
   const uVig = gl.getUniformLocation(program, "u_vignette");
   const uSafe = gl.getUniformLocation(program, "u_safe");
   const uEdge = gl.getUniformLocation(program, "u_edge");
+  const uBloom = gl.getUniformLocation(program, "u_bloom");
 
   return {
     upload(source) {
@@ -176,6 +189,7 @@ export function createWarpScene(
       gl.uniform1f(uVig, u.vignette);
       gl.uniform1f(uSafe, u.safeZone);
       gl.uniform1f(uEdge, u.edgeShadow);
+      gl.uniform1f(uBloom, u.bloom);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.bindVertexArray(vao);

@@ -2,8 +2,6 @@ import type {
   ContainersEnvResult,
   ContainersListResult,
   ContainersLogsResult,
-  HostInfoResult,
-  NetworksListResult,
   StacksListResult,
 } from "@dockos/contract";
 import type { Container, EnvVar, LogLine, Profile } from "../data/mock.ts";
@@ -17,11 +15,6 @@ import type { Container, EnvVar, LogLine, Profile } from "../data/mock.ts";
 //   • Stack vs Profile — same fields, but the contract's optional `note` is `string | undefined`
 //     (zod `.optional()`) while the view's `Profile.note` is `string` under
 //     exactOptionalPropertyTypes. `adaptStacks` rebuilds each row, attaching `note` only when set.
-//   • networks — mock.ts has NO networks fixture. `adaptNetworks` returns the contract `Network[]`
-//     as-is; any networks view should consume the contract type directly (there is nothing to
-//     adapt to). The mock client synthesizes a small set so the call still resolves.
-//   • host — mock.ts's `HOST` is an untyped literal; the contract `HostInfo` is its typed superset.
-//     `adaptHost` is an identity returning the contract type.
 //   • container detail / image audit — mock.ts's `detailFor`, `ImageAudit`, `HOST_HISTORY` have NO
 //     contract method yet (no `containers.inspect` / `images.list` / host history in methods.ts).
 //     Those views must keep their mock source until the contract grows the methods.
@@ -50,12 +43,4 @@ export function adaptLogs(result: ContainersLogsResult): LogLine[] {
 
 export function adaptEnv(result: ContainersEnvResult): EnvVar[] {
   return result.env;
-}
-
-export function adaptNetworks(result: NetworksListResult): NetworksListResult["networks"] {
-  return result.networks;
-}
-
-export function adaptHost(result: HostInfoResult): HostInfoResult {
-  return result;
 }

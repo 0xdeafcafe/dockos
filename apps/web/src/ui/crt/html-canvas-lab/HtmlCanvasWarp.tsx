@@ -16,6 +16,8 @@ export interface CrtCanvasWarpProps {
   edgeShadow?: number;
   /** Output resolution multiplier vs CSS px. Default 1 (device-agnostic super-sample knob). */
   renderScale?: number;
+  /** HDR: extended-range backbuffer + bloom so bright glyphs glow past white on HDR displays. */
+  hdr?: boolean;
   /** Fired when the canvas warp isn't actually available/working (unsupported or it degraded
    *  at runtime) so the host can fall back to a different CRT path instead of showing flat DOM. */
   onUnavailable?: () => void;
@@ -51,6 +53,7 @@ export function CrtCanvasWarp({
   safeZone = 0,
   edgeShadow = 0.06,
   renderScale = 1,
+  hdr = false,
   onUnavailable,
 }: CrtCanvasWarpProps) {
   const { supported, canvasRef, sourceRef } = useHtmlCanvasWarp({
@@ -60,6 +63,9 @@ export function CrtCanvasWarp({
     safeZone,
     edgeShadow,
     renderScale,
+    // gain tuned so bright glyphs push past white on an HDR buffer but stay crisp/readable
+    bloom: hdr ? 1.6 : 0,
+    hdr,
   });
 
   useEffect(() => {

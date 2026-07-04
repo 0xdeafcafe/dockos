@@ -102,6 +102,8 @@
 }
 .denied__actions {
   display: flex;
+  flex-wrap: wrap;
+  row-gap: 0;
   justify-content: center;
 }
 .denied__actions .ink-act,

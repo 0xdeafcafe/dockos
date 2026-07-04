@@ -34,6 +34,9 @@ export const ServerConfig = z.object({
     loginUrl: z.string().nullable(),
   }),
   metrics: z.boolean(),
+  // whether an image CVE scanner is wired (trivy/grype). Off → the UI hides the CVE columns
+  // instead of showing zeros, since the engine alone can't report vulnerabilities.
+  cve: z.boolean(),
 });
 export type ServerConfig = z.infer<typeof ServerConfig>;
 

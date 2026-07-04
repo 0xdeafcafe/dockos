@@ -5,36 +5,44 @@ import { ConfirmStrip } from "../../ui/confirm.tsx";
 import type { Pending } from "../../ui/confirm.tsx";
 import { WordSlam } from "../../ui/slam.tsx";
 import { keyOwnedByWidget, useRovingRow } from "../../ui/focus.ts";
-import { detailFor } from "../../data/mock.ts";
 import type { Container } from "../../data/mock.ts";
+import { useRpcQuery } from "../../rpc/hooks.ts";
 import { useSound } from "../../sound/SoundProvider.tsx";
 import type { FleetApi } from "../fleet/useFleet.ts";
 import { OverviewTab } from "./OverviewTab.tsx";
 import { LogsTab } from "./LogsTab.tsx";
 import { EnvTab } from "./EnvTab.tsx";
 import { FilesTab } from "./FilesTab.tsx";
+import { ComposeTab } from "./ComposeTab.tsx";
 import "./detail.css";
 
-type Tab = "overview" | "logs" | "env" | "files";
-const TABS: Tab[] = ["overview", "logs", "env", "files"];
+type Tab = "overview" | "logs" | "env" | "files" | "compose";
+const TABS: Tab[] = ["overview", "logs", "env", "files", "compose"];
 
 export function DetailView({
   container,
   api,
   live,
   onBack,
+  onOpen,
 }: {
   container: Container;
   api: FleetApi;
   live: boolean;
   onBack: () => void;
+  onOpen: (c: Container) => void;
 }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [pending, setPending] = useState<Pending | null>(null);
   const [slam, setSlam] = useState<"TERMINATED" | "REWIND" | null>(null);
   const roving = useRovingRow<HTMLDivElement>();
   const sound = useSound();
-  const d = detailFor(container);
+  const { data: d } = useRpcQuery("containers.inspect", { id: container.id }, {});
+  // a peer (from the TALKS TO register) jumps to that container's detail
+  const openPeer = (name: string) => {
+    const c = api.fleet.find((x) => x.name === name);
+    if (c) onOpen(c);
+  };
 
   const doRestart = () => {
     api.restart(container.id);
@@ -98,7 +106,7 @@ export function DetailView({
       </div>
       <div className="detail__meta">
         <span>
-          image <b>{d.image}</b>
+          image <b>{d?.image ?? "…"}</b>
         </span>
         <span>
           id <b>{container.id}</b>
@@ -107,7 +115,7 @@ export function DetailView({
           up <b>{container.uptime}</b>
         </span>
         <span>
-          ip <b>{d.ip}</b>
+          ip <b>{d?.ip ?? "…"}</b>
         </span>
       </div>
       <div className="detail__tabs" role="toolbar" tabIndex={-1} onKeyDown={roving}>
@@ -125,12 +133,11 @@ export function DetailView({
       </div>
       <Rule tone="dim" />
       <div className="detail__body">
-        {tab === "overview" ? <OverviewTab container={container} /> : null}
+        {tab === "overview" ? <OverviewTab container={container} onOpenPeer={openPeer} /> : null}
         {tab === "logs" ? <LogsTab containerId={container.id} /> : null}
         {tab === "env" ? <EnvTab containerId={container.id} /> : null}
-        {tab === "files" ? (
-          <FilesTab containerName={container.name} live={live && !pending} />
-        ) : null}
+        {tab === "files" ? <FilesTab containerId={container.id} /> : null}
+        {tab === "compose" ? <ComposeTab containerId={container.id} /> : null}
       </div>
       <Rule tone="dim" />
       {pending ? (

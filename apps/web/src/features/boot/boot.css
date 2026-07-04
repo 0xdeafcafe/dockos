@@ -14,10 +14,10 @@
   width: min(72ch, 90vw);
   white-space: pre-wrap;
   color: var(--accent);
-  /* piOS phosphor: glow + a horizontal persistence smear trailing the beam */
+  /* piOS phosphor: full glow + persistence smear kept; only the shadow alpha is cut, glyphs solid */
   text-shadow:
-    0 0 8px var(--glow),
-    -9px 0 14px var(--glow);
+    0 0 8px color-mix(in srgb, var(--glow) 28%, transparent),
+    -9px 0 14px color-mix(in srgb, var(--glow) 28%, transparent);
   animation: boot-unstable 2.3s steps(1) infinite;
 }
 .boot__line {
@@ -32,10 +32,13 @@
 .boot__good {
   color: var(--ok);
 }
+.boot__hold {
+  color: var(--warn);
+}
 .boot__bad {
   color: var(--err);
   font-weight: 700;
-  text-shadow: 0 0 12px rgba(255, 42, 42, 0.6);
+  text-shadow: 0 0 12px rgba(255, 42, 42, 0.3);
   animation: boot-bad 640ms steps(1) infinite;
 }
 @keyframes boot-bad {
@@ -135,9 +138,10 @@
 /* the logo prints and settles — a quick phosphor bloom, not a splash slam */
 .boot__logo {
   color: var(--accent);
+  /* full spread kept; only the SHADOW's alpha is cut, so the glow is fainter but the glyphs stay solid */
   text-shadow:
-    0 0 14px var(--glow),
-    0 0 5px var(--glow);
+    0 0 14px color-mix(in srgb, var(--glow) 28%, transparent),
+    0 0 5px color-mix(in srgb, var(--glow) 28%, transparent);
   animation: boot-print 420ms ease-out both;
   user-select: none;
 }
@@ -201,7 +205,7 @@
 }
 .boot__bar {
   color: var(--accent);
-  text-shadow: 0 0 10px var(--glow);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--glow) 28%, transparent);
 }
 .boot__status {
   min-height: 1lh;

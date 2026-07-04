@@ -9,8 +9,16 @@ import { ConfigGetParams, ConfigGetResult } from "./config.ts";
 import {
   ContainerActionParams,
   ContainerActionResult,
+  ContainersComposeParams,
+  ContainersComposeResult,
   ContainersEnvParams,
   ContainersEnvResult,
+  ContainersFileParams,
+  ContainersFileResult,
+  ContainersFilesParams,
+  ContainersFilesResult,
+  ContainersInspectParams,
+  ContainersInspectResult,
   ContainersListParams,
   ContainersListResult,
   ContainersLogsParams,
@@ -27,6 +35,8 @@ import {
   MetricsHostResult,
 } from "./metrics.ts";
 import { NetworksListParams, NetworksListResult } from "./networks.ts";
+import { ImagesListParams, ImagesListResult } from "./images.ts";
+import { VolumesListParams, VolumesListResult } from "./volumes.ts";
 import {
   StackActionParams,
   StacksDownResult,
@@ -48,10 +58,16 @@ export const rpcMethods = {
   "containers.pause": { params: ContainerActionParams, result: ContainerActionResult },
   "containers.logs": { params: ContainersLogsParams, result: ContainersLogsResult },
   "containers.env": { params: ContainersEnvParams, result: ContainersEnvResult },
+  "containers.inspect": { params: ContainersInspectParams, result: ContainersInspectResult },
+  "containers.files": { params: ContainersFilesParams, result: ContainersFilesResult },
+  "containers.file": { params: ContainersFileParams, result: ContainersFileResult },
+  "containers.compose": { params: ContainersComposeParams, result: ContainersComposeResult },
   "stacks.list": { params: StacksListParams, result: StacksListResult },
   "stacks.up": { params: StackActionParams, result: StacksUpResult },
   "stacks.down": { params: StackActionParams, result: StacksDownResult },
   "networks.list": { params: NetworksListParams, result: NetworksListResult },
+  "images.list": { params: ImagesListParams, result: ImagesListResult },
+  "volumes.list": { params: VolumesListParams, result: VolumesListResult },
   "host.info": { params: HostInfoParams, result: HostInfoResult },
   "metrics.host": { params: MetricsHostParams, result: MetricsHostResult },
   "metrics.hostHistory": { params: MetricsHostHistoryParams, result: MetricsHostHistoryResult },

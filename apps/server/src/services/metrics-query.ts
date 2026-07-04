@@ -53,27 +53,35 @@ function firstSeries(series: PromRangeSeries[]): number[] {
   return (series[0]?.samples ?? []).map((s) => sanitizePct(s.value));
 }
 
+// Host memory %: cAdvisor's ROOT cgroup working-set over machine memory. This is the portable
+// default — many node_exporters don't export node_memory_* (or prefix it), but cAdvisor is always
+// in a Docker-metrics stack. Overridable per-deployment via DOCKOS_HOST_MEM_QUERY.
+const DEFAULT_MEM_PCT =
+  '100 * sum(container_memory_working_set_bytes{id="/",job="cadvisor"}) / sum(machine_memory_bytes{job="cadvisor"})';
+const MEM_USED = 'sum(container_memory_working_set_bytes{id="/",job="cadvisor"})';
+const MEM_TOTAL = 'max(machine_memory_bytes{job="cadvisor"})';
+
 export class MetricsQueryService {
   private readonly prom: PrometheusClient;
+  private readonly memQuery: string;
 
-  constructor(prom: PrometheusClient) {
+  constructor(prom: PrometheusClient, memQuery: string = DEFAULT_MEM_PCT) {
     this.prom = prom;
+    this.memQuery = memQuery.trim() || DEFAULT_MEM_PCT;
   }
 
   // Convenience factory so the composition root only depends on this service, not the adapter.
-  static fromUrl(baseUrl: string): MetricsQueryService {
-    return new MetricsQueryService(new PrometheusClient(baseUrl));
+  static fromUrl(baseUrl: string, memQuery?: string): MetricsQueryService {
+    return new MetricsQueryService(new PrometheusClient(baseUrl), memQuery ?? DEFAULT_MEM_PCT);
   }
 
   // Current host cpu% / mem% / memText / disk% for the SYSTEM registers.
   async host(): Promise<MetricsHostResult> {
     const [cpu, memPct, memUsed, memTotal, disk] = await Promise.all([
       this.prom.query('100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)'),
-      this.prom.query(
-        "avg(100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))",
-      ),
-      this.prom.query("avg(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)"),
-      this.prom.query("avg(node_memory_MemTotal_bytes)"),
+      this.prom.query(this.memQuery),
+      this.prom.query(MEM_USED),
+      this.prom.query(MEM_TOTAL),
       this.prom.query(
         '100 * (1 - avg(node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"}) / ' +
           'avg(node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}))',
@@ -100,12 +108,7 @@ export class MetricsQueryService {
         end,
         step,
       ),
-      this.prom.queryRange(
-        "avg(100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))",
-        start,
-        end,
-        step,
-      ),
+      this.prom.queryRange(this.memQuery, start, end, step),
     ]);
     return { cpu: firstSeries(cpu), mem: firstSeries(mem) };
   }

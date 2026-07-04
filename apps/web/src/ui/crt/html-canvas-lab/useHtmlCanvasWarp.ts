@@ -21,6 +21,10 @@ export interface WarpOptions {
   edgeShadow: number;
   /** Output backing resolution as a multiple of CSS px. >1 super-samples, <1 saves fill-rate. */
   renderScale: number;
+  /** HDR bloom gain (0 = off / SDR). >0 needs an extended-range backbuffer (set when `hdr`). */
+  bloom: number;
+  /** Request an extended-range (half-float) backbuffer + HDR canvas so bloom renders past white. */
+  hdr: boolean;
 }
 
 export interface WarpHandle {
@@ -113,7 +117,13 @@ function makeUploader(gl: WebGL2RenderingContext): ElementUploader | undefined {
 //
 // The DOM texture's resolution is `source`'s own layout size (texElementImage2D rasterizes at that
 // size), independent of the backing store — so output res and texture res stay decoupled.
-function syncSize(canvas: HTMLCanvasElement, source: HTMLElement, scale: number): boolean {
+function syncSize(
+  canvas: HTMLCanvasElement,
+  source: HTMLElement,
+  scale: number,
+  gl: WebGL2RenderingContext,
+  hdr: boolean,
+): boolean {
   const cssW = Math.max(1, Math.round(canvas.clientWidth));
   const cssH = Math.max(1, Math.round(canvas.clientHeight));
   const wPx = `${cssW}px`;
@@ -124,6 +134,21 @@ function syncSize(canvas: HTMLCanvasElement, source: HTMLElement, scale: number)
   const w = Math.max(1, Math.round(cssW * scale));
   const h = Math.max(1, Math.round(cssH * scale));
   if (canvas.width === w && canvas.height === h) return false;
+  // HDR: allocate an extended-range half-float backbuffer so shader outputs >1.0 survive. Per spec,
+  // after drawingBufferStorage the width/height attributes no longer resize the buffer, so we still
+  // set them (below) purely as our change-tracking marker; the float buffer is sized here.
+  if (hdr) {
+    const glx = gl as WebGL2RenderingContext & {
+      drawingBufferStorage?: (fmt: number, w: number, h: number) => void;
+    };
+    if (typeof glx.drawingBufferStorage === "function") {
+      try {
+        glx.drawingBufferStorage(gl.RGBA16F, w, h);
+      } catch {
+        /* unsupported → fall back to the standard 8-bit buffer below */
+      }
+    }
+  }
   canvas.width = w;
   canvas.height = h;
   return true;
@@ -136,6 +161,8 @@ interface RunArgs {
   gl: WebGL2RenderingContext;
   optsRef: RefObject<WarpOptions>;
   onFail: () => void;
+  /** HDR is truly usable (APIs + extension + HDR display) — otherwise bloom would clamp to white. */
+  hdrCapable: boolean;
 }
 
 // Drive the loop. THE PAINT-RECORD PROTOCOL — and why we must NOT upload inside the `paint` handler:
@@ -148,7 +175,7 @@ interface RunArgs {
 // a snapshot → the `paint` handler only sets a flag → the NEXT rAF uploads (outside paint, using the
 // just-recorded snapshot, which now exists) and draws. Returns a stop fn.
 function run(args: RunArgs): () => void {
-  const { canvas, source, scene, gl, optsRef, onFail } = args;
+  const { canvas, source, scene, gl, optsRef, onFail, hdrCapable } = args;
 
   const paintable = asPaintableCanvas(canvas);
   if (!paintable) {
@@ -183,7 +210,9 @@ function run(args: RunArgs): () => void {
   const frame = () => {
     if (stopped) return;
     const opts = optsRef.current;
-    syncSize(canvas, source, opts.renderScale);
+    // only the truly-HDR path gets the float backbuffer; on SDR the standard 8-bit buffer keeps
+    // colours intact (a >1.0 boost there would clamp bright blue → white)
+    syncSize(canvas, source, opts.renderScale, gl, hdrCapable);
     gl.viewport(0, 0, canvas.width, canvas.height);
 
     // Mirror the safe-zone's affine shrink onto the SOURCE so its hit region lines up with where the
@@ -218,7 +247,8 @@ function run(args: RunArgs): () => void {
     }
 
     // Nothing to warp until the first upload has delivered a texture; the shader draws black glass.
-    if (haveTexture) scene.draw(opts);
+    // Bloom only when HDR is genuinely active — on SDR it's forced to 0 so nothing clamps to white.
+    if (haveTexture) scene.draw(hdrCapable ? opts : { ...opts, bloom: 0 });
     raf = requestAnimationFrame(frame);
   };
   raf = requestAnimationFrame(frame);
@@ -265,9 +295,33 @@ export function useHtmlCanvasWarp(options: WarpOptions): WarpHandle {
       return;
     }
 
-    return run({ canvas, source, scene, gl, optsRef, onFail: () => setDegraded(true) });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- optsRef is a live ref; re-running would tear down GL on every option change
-  }, [supported]);
+    // HDR is usable ONLY when every piece is present AND the display actually reports high dynamic
+    // range: the float backbuffer method, the half-float colour-buffer extension, the canvas HDR
+    // config, and an HDR display. Anything missing → stay SDR (bloom forced to 0 in the loop) so a
+    // >1.0 boost never clamps bright blue to white. Re-runs when `options.hdr` flips.
+    const canvasHdr = canvas as HTMLCanvasElement & {
+      configureHighDynamicRange?: (o: { mode: string }) => void;
+    };
+    const glHdr = gl as WebGL2RenderingContext & {
+      drawingBufferStorage?: (fmt: number, w: number, h: number) => void;
+    };
+    let hdrCapable = false;
+    if (options.hdr) {
+      try {
+        hdrCapable =
+          typeof glHdr.drawingBufferStorage === "function" &&
+          gl.getExtension("EXT_color_buffer_half_float") !== null &&
+          typeof canvasHdr.configureHighDynamicRange === "function" &&
+          window.matchMedia("(dynamic-range: high)").matches;
+        if (hdrCapable) canvasHdr.configureHighDynamicRange?.({ mode: "extended" });
+      } catch {
+        hdrCapable = false;
+      }
+    }
+
+    return run({ canvas, source, scene, gl, optsRef, onFail: () => setDegraded(true), hdrCapable });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- optsRef is a live ref; only re-init GL when support OR the HDR buffer format changes
+  }, [supported, options.hdr]);
 
   return { supported, canvasRef, sourceRef };
 }

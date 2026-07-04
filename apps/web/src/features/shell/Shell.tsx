@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Box } from "../../ui/box.tsx";
 import { Rule } from "../../ui/text.tsx";
-import { IMAGES } from "../../data/mock.ts";
 import type { Container } from "../../data/mock.ts";
+import { useRpcQuery } from "../../rpc/hooks.ts";
 import { Palette } from "../palette/Palette.tsx";
 import { StatusBar } from "./StatusBar.tsx";
 import { CanvasHint } from "./CanvasHint.tsx";
@@ -115,7 +115,8 @@ function ShellFrame({
     setSilenced(false);
   }, [unhealthy]);
   const alarm = unhealthy > 0 && !silenced;
-  const cveWarn = IMAGES.some((i) => i.cves.crit + i.cves.high > 0);
+  const { data: imgData } = useRpcQuery("images.list", {}, { pollMs: 30000 });
+  const cveWarn = (imgData?.images ?? []).some((i) => i.cves.crit + i.cves.high > 0);
   const firstUnhealthy = fleetApi.fleet.find((c) => c.state === "unhealthy");
   const crumb =
     view === "detail" && container ? `CONTAINERS ▸ ${container.name}` : VIEW_TITLES[view];

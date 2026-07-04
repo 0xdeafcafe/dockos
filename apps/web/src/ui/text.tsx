@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { sparkText } from "./chart.ts";
 import "./ink.css";
@@ -35,17 +34,6 @@ export function Key({ children }: { children: ReactNode }) {
 // The classic blinking block cursor.
 export function Cursor() {
   return <span className="ink-cursor">▮</span>;
-}
-
-const SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
-
-export function Spinner({ tone = "accent" }: { tone?: Tone }) {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((n) => (n + 1) % SPINNER.length), 90);
-    return () => clearInterval(t);
-  }, []);
-  return <span className={`ink--${tone}`}>{SPINNER[i]}</span>;
 }
 
 export type ContainerState = "up" | "paused" | "exited" | "unhealthy";

@@ -41,22 +41,8 @@
   }
 }
 
-/* one hard knock when a point lands / the packet dies */
-.game--shake {
-  animation: game-shake 160ms steps(2);
-}
-@keyframes game-shake {
-  25% {
-    transform: translateX(0.5ch);
-  }
-  75% {
-    transform: translateX(-0.5ch);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .game__flash,
-  .game--shake {
-    animation: none; /* the inverse row stays; only the strobe/knock goes */
+  .game__flash {
+    animation: none; /* the inverse row stays; only the strobe goes */
   }
 }

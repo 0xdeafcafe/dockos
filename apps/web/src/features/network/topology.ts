@@ -1,7 +1,9 @@
 // Topology data model for the network-map view. Zones are described as data and
 // rendered to unicode box art by renderTopology.ts — no hand-drawn constants.
-// Phase 1 builds these Zone objects from the live engine + compose labels; for now
-// SITE_ZONES encodes the demo fleet faithfully.
+// The data source is the live engine via the `networks.list` RPC: each docker
+// network becomes a Zone whose nodes are its member containers (see networkToZone).
+
+import type { Network } from "@dockos/contract";
 
 /** A service box (or a grouped dependency when nested via `children`). */
 export interface Node {
@@ -33,6 +35,8 @@ export interface Node {
   row?: number;
   /** Minimum outer width in cells. */
   minWidth?: number;
+  /** Presentational-only box (e.g. an "· no containers ·" placeholder): no hotspot. */
+  nonUnit?: boolean;
 }
 
 /**
@@ -72,7 +76,7 @@ export interface CrossLink {
 export interface Zone {
   id: string;
   title: string;
-  /** Stack id passed to onJump when the zone is inspected. */
+  /** Stack/filter token passed to onJump when the zone is inspected. */
   jump: string;
   nodes: Node[];
   edges: Edge[];
@@ -83,149 +87,95 @@ export interface Zone {
   crossLinks: CrossLink[];
 }
 
-/** A directed flow that CROSSES a zone boundary — drives the focus-linked highlighting and
- *  the BOUNDARIES rail. `from`/`to` are zone ids (or an external pseudo-id: internet / tailnet
- *  / vpn). `boundary` tags the kind of crossing so the rail can colour it. */
-export interface CrossBoundary {
-  from: string;
-  to: string;
-  via: string;
-  boundary: "wan" | "tunnel" | "bridge" | "vpn";
+// ── Live-data mapping: networks.list → renderable zones ─────────────────────────
+//
+// EDGE spans the full pane width (its grid cell is `grid-column: 1 / -1`); the rest
+// share a 2-column grid, so they render at ~half width or the art overflows the cell.
+export const FULL_W = 92;
+export const HALF_W = 66;
+/** Render (and row-pack) width for the zone at `index`: the first card is full-width. */
+export const zoneRenderWidth = (index: number): number => (index === 0 ? FULL_W : HALF_W);
+
+/** A shared-container link between two networks — the real-data analog of the old
+ *  hand-authored cross-boundary flows. Drives focus highlighting + the BOUNDARIES rail. */
+export interface NetLink {
+  a: string;
+  b: string;
+  aName: string;
+  bName: string;
+  /** Container names present in BOTH networks. */
+  via: string[];
 }
 
-// The inter-zone (and edge-of-world) flows for the demo stack. EDGE is the ingress hub
-// (routes to everything); OBSERVABILITY is the telemetry sink (everything reports to it).
-export const CROSS_BOUNDARIES: CrossBoundary[] = [
-  { from: "internet", to: "edge", via: ":443 → gateway tunnel", boundary: "wan" },
-  { from: "tailnet", to: "edge", via: "apps.example.internal → auth", boundary: "wan" },
-  { from: "edge", to: "observ", via: "proxy routes dashboard:3000", boundary: "bridge" },
-  { from: "edge", to: "media", via: "proxy :443 → media/catalog", boundary: "bridge" },
-  { from: "edge", to: "data", via: "proxy routes app:8080", boundary: "bridge" },
-  { from: "media", to: "observ", via: "collector tails stdout + ⌁", boundary: "bridge" },
-  { from: "data", to: "observ", via: "⌁ metrics scraped", boundary: "bridge" },
-  { from: "media", to: "vpn", via: "gateway sealed egress", boundary: "vpn" },
-];
-
-/** Zone ids linked to `zoneId` by any cross-boundary flow (either direction). */
-export function linkedZones(zoneId: string): Set<string> {
-  const out = new Set<string>();
-  for (const b of CROSS_BOUNDARIES) {
-    if (b.from === zoneId) out.add(b.to);
-    else if (b.to === zoneId) out.add(b.from);
+/** Every pair of networks that share at least one container. A compose project's
+ *  `<project>_default` net holds every service, so it trivially shares containers with
+ *  all of them — that's noise, not topology, so those nets produce no links. */
+export function sharedLinks(networks: Network[]): NetLink[] {
+  const linkable = networks.filter((n) => !n.name.endsWith("_default"));
+  const out: NetLink[] = [];
+  for (let i = 0; i < linkable.length; i += 1) {
+    for (let j = i + 1; j < linkable.length; j += 1) {
+      const a = linkable[i]!;
+      const b = linkable[j]!;
+      const bset = new Set(b.containers);
+      const via = a.containers.filter((c) => bset.has(c));
+      if (via.length > 0) out.push({ a: a.id, b: b.id, aName: a.name, bName: b.name, via });
+    }
   }
   return out;
 }
 
-// ── The demo fleet, four zones ──────────────────────────────────────────────
+/** Ids of networks linked to `id` by any shared-container flow (either direction). */
+export function linkedNetworks(id: string, links: NetLink[]): Set<string> {
+  const out = new Set<string>();
+  for (const l of links) {
+    if (l.a === id) out.add(l.b);
+    else if (l.b === id) out.add(l.a);
+  }
+  return out;
+}
 
-export const SITE_ZONES: Zone[] = [
-  {
-    id: "edge",
-    title: "EDGE · INGRESS",
-    jump: "core",
-    externals: [
-      { text: "internet ──:443──", target: "tunnel" },
-      { text: "tailnet · apps.example.internal ──", target: "auth" },
-    ],
-    nodes: [
-      { id: "tunnel", label: "TUNNEL", sublabel: "profile: public" },
-      { id: "proxy", label: "PROXY", sublabel: ":80 · :443", hangVolume: "proxy-data" },
-      {
-        id: "auth",
-        label: "AUTH · verify",
-        children: [{ id: "cache", label: "CACHE", sublabel: "session store" }],
-      },
-    ],
-    edges: [
-      { from: "tunnel", to: "proxy", label: "tunnel" },
-      { from: "proxy", to: "auth", label: "auth" },
-    ],
-    boundary: "boundary: internet ⇢ homelab_default (bridge)",
-    crossLinks: [
-      { dir: "out", text: "ROUTES dashboard · app · media" },
-      { dir: "in", text: "every public name terminates here" },
-    ],
-  },
-  {
-    id: "observ",
-    title: "OBSERVABILITY",
-    jump: "observ",
-    nodes: [
-      { id: "dashboard", label: "DASHBOARD", sublabel: "dashboards" },
-      { id: "metrics", label: "METRICS", volumes: ["metrics-tsdb"] },
-      { id: "logs", label: "LOGS ▤ data", row: 1 },
-      { id: "collector", label: "COLLECTOR", row: 1 },
-    ],
-    edges: [
-      { from: "dashboard", to: "metrics", label: "query" },
-      { from: "dashboard", to: "logs", label: "logs" },
-      { from: "collector", to: "logs", label: "ship" },
-    ],
-    notes: [
-      { row: 0, lines: ["◀ cadvisor ⌁", "◀ node_exporter"] },
-      { row: 1, lines: ["◀ all stdout"] },
-    ],
-    crossLinks: [
-      { dir: "in", text: "EDGE proxy routes dashboard:3000" },
-      { dir: "in", text: "ALL AREAS emit ⌁ + stdout" },
-    ],
-  },
-  {
-    id: "media",
-    title: "MEDIA · VPN NETNS",
-    jump: "media",
-    nodes: [
-      { id: "media", label: "MEDIA" },
-      { id: "indexer", label: "INDEXER" },
-      { id: "catalog", label: "CATALOG" },
-      {
-        id: "gateway",
-        label: "VPN NETNS · gateway",
-        sealed: true,
-        row: 1,
-        footer: "sealed egress → vpn",
-        children: [{ id: "worker", label: "WORKER · no own IP" }],
-      },
-    ],
-    edges: [
-      { from: "media", to: "indexer" },
-      { from: "catalog", to: "indexer" },
-      { from: "media", to: "gateway", label: "grab" },
-      { from: "catalog", to: "gateway", label: "grab" },
-    ],
-    notes: [{ row: 0, lines: ["▤ /data shared", "▤ per-unit cfg"] }],
-    crossLinks: [
-      { dir: "in", text: "EDGE requests via proxy" },
-      { dir: "out", text: "OBSERV collector tails stdout" },
-    ],
-  },
-  {
-    id: "data",
-    title: "DATA",
-    jump: "data",
-    nodes: [
-      {
-        id: "app",
-        label: "APP",
-        sublabel: ":8080 · oidc",
-        caption: "profile: data",
-      },
-      {
-        id: "rack",
-        label: "DATA RACK",
-        titled: true,
-        childStyle: "list",
-        children: [
-          { id: "db", label: "DB", volumes: ["db-data"] },
-          { id: "queue", label: "QUEUE", sublabel: "queue" },
-          { id: "warehouse", label: "WAREHOUSE", volumes: ["warehouse-data"] },
-        ],
-      },
-    ],
-    edges: [{ from: "app", to: "rack", label: "write" }],
-    crossLinks: [
-      { dir: "in", text: "EDGE proxy routes app.example.internal" },
-      { dir: "out", text: "OBSERV ⌁" },
-    ],
-  },
-];
+// Layout constants mirrored from renderTopology.ts so row-packing lands boxes inside
+// the render width. Box outer width ≈ label + 6 (layoutNode: iw = label + 4, +2 borders);
+// unlabelled edges leave a 3-cell gap; the diagram is inset by a 1-cell margin.
+const MARGIN = 1;
+const PLAIN_GAP = 3;
+const boxWidth = (label: string) => label.length + 6;
+
+// Pack container boxes into left→right rows that fit `width`; overflow wraps to a new
+// row. With no edges between them the renderer simply stacks the rows.
+function packRows(names: string[], width: number): Node[] {
+  const nodes: Node[] = [];
+  let row = 0;
+  let x = MARGIN;
+  for (const name of names) {
+    const w = boxWidth(name);
+    if (x > MARGIN && x + PLAIN_GAP + w > width) {
+      row += 1;
+      x = MARGIN;
+    }
+    const gap = x === MARGIN ? 0 : PLAIN_GAP;
+    nodes.push({ id: name, label: name, row });
+    x += gap + w;
+  }
+  return nodes;
+}
+
+/** Build the renderable Zone for one docker network. `width` is the pane cell width
+ *  the zone will be rendered at (so container boxes wrap instead of clipping). */
+export function networkToZone(net: Network, links: NetLink[], width: number): Zone {
+  const nodes =
+    net.containers.length === 0
+      ? [{ id: `${net.id}:empty`, label: "· no containers ·", nonUnit: true }]
+      : packRows([...net.containers].toSorted(), width);
+
+  const crossLinks: CrossLink[] = links
+    .filter((l) => l.a === net.id || l.b === net.id)
+    .map((l) => ({ dir: "out", text: `↔ ${l.a === net.id ? l.bName : l.aName} · ${l.via.join(", ")}` }));
+
+  const boundary = net.internal
+    ? `⊘ internal · driver: ${net.driver} · no external route`
+    : `driver: ${net.driver} · scope: ${net.scope}`;
+
+  return { id: net.id, title: net.name, jump: net.name, nodes, edges: [], crossLinks, boundary };
+}

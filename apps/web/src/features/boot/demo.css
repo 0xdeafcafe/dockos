@@ -1,0 +1,100 @@
+/* The demo sign-in console (VITE_DEMO only). Same language as every other pane: unicode structure
+   via <Box>, cell-aligned spacing (ch across, lh down), semantic tokens for colour/glow. No CSS
+   borders/radius/shadows — the global !important guard forbids them anyway. */
+.demo {
+  /* absolute, NOT fixed — stays inside .crt__content so it bends with the tube like the sign-in
+     wall it stands in for (see signin.css) */
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  animation: demo-in 320ms ease-out both;
+}
+
+.demo__panel {
+  position: relative;
+  width: min(66ch, 94vw);
+}
+/* the Box grid is transparent by default — paint the panel solid so the warped tube behind it
+   doesn't double the glyphs */
+.demo__panel > .ink-box {
+  background: var(--bg);
+}
+
+.demo__logo {
+  color: var(--accent);
+  text-align: center;
+  align-self: center;
+  user-select: none;
+  text-shadow:
+    0 0 14px color-mix(in srgb, var(--glow) 28%, transparent),
+    0 0 5px color-mix(in srgb, var(--glow) 28%, transparent);
+}
+.demo__sub {
+  color: var(--dim);
+  text-align: center;
+  white-space: pre;
+}
+.demo__gap {
+  height: 1lh;
+}
+
+.demo__field {
+  display: flex;
+  gap: 2ch;
+  height: 1lh;
+  align-items: baseline;
+  white-space: pre;
+}
+.demo__label {
+  color: var(--dim);
+  min-width: 10ch;
+}
+
+.demo__hint {
+  color: var(--accent);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--glow) 28%, transparent);
+}
+.demo__actions {
+  display: flex;
+  justify-content: center;
+}
+
+/* the "run it for real" briefing — reuses the .confirm / .confirm__dialog modal shell (ink.css) */
+.demo-about {
+  width: min(74ch, 94vw);
+}
+.demo-about__body {
+  color: var(--text);
+  line-height: var(--rowlh);
+  padding: 0 1ch;
+}
+.demo-about__url {
+  color: var(--accent);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--glow) 28%, transparent);
+}
+.demo-about__actions {
+  display: flex;
+  justify-content: center;
+}
+
+@keyframes demo-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo {
+    animation: none;
+  }
+}

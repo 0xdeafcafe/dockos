@@ -105,10 +105,6 @@
   display: flex;
   flex-direction: column;
 }
-.detail__chart {
-  color: var(--accent);
-}
-
 /* live-engine scope: 0–100 axis rail, threshold-toned trace, sample-window footer */
 .ov-chart {
   margin-bottom: 1lh;
@@ -141,33 +137,19 @@
   color: var(--dim);
   white-space: pre;
   user-select: none;
+  line-height: 1; /* match the plot's 1em rows so the 100/0 rail lines up with the bars */
 }
 .ov-chart__plot {
   overflow: hidden;
+  /* block rows must tile seamlessly (1em each) regardless of the density line-height, else the
+     bars gap apart at cozy density */
+  line-height: 1;
 }
 .ov-chart__foot {
   color: var(--dim);
   white-space: pre;
   overflow: hidden;
   height: 1lh;
-}
-.detail__actions {
-  display: flex;
-  gap: 2ch;
-  white-space: pre;
-}
-.detail__act {
-  color: var(--text);
-}
-.detail__act:hover,
-.detail__act:focus {
-  background: var(--accent);
-  color: var(--bg);
-}
-.detail__act--danger:hover,
-.detail__act--danger:focus {
-  background: var(--err);
-  color: var(--bg);
 }
 
 .logline {
@@ -232,7 +214,8 @@
 .overview__stats {
   width: 34ch;
   flex: none;
-  overflow: hidden;
+  /* scroll the registers/peers within the column instead of clipping them off the page */
+  overflow: hidden auto;
 }
 .overview__reg + .overview__reg {
   margin-top: 1lh; /* cell-aligned: exactly one row of air between registers */
@@ -240,4 +223,62 @@
 .overview__stat {
   white-space: pre;
   overflow: hidden;
+}
+/* TALKS TO peer — a clickable stat that jumps to that container's detail */
+.overview__peer {
+  display: block;
+  width: 100%;
+  white-space: pre;
+  overflow: hidden;
+  color: var(--text);
+}
+.overview__peer:hover,
+.overview__peer:focus-visible {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.compose {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.composeline {
+  display: block;
+  white-space: pre;
+  color: var(--text);
+}
+
+/* ─── RESPONSIVE ─── every header/tab/meta/action bar in the detail deck folds to more
+   rows instead of clipping controls; the overview splits stack; scopes pan sideways */
+@media (max-width: 900px) {
+  .detail__head,
+  .detail__meta,
+  .detail__band,
+  .detail__tabs,
+  .ov-chart__head {
+    flex-wrap: wrap;
+    height: auto;
+    overflow: visible;
+    row-gap: 0;
+  }
+  .detail__tabfill {
+    display: none;
+  }
+  .overview {
+    flex-direction: column;
+    gap: 0.5lh;
+  }
+  .overview__stats {
+    width: 100%;
+  }
+  .overview__charts {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .ov-chart__body {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
 }

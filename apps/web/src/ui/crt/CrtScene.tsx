@@ -78,7 +78,7 @@ function CrtCursor({ warpK }: { warpK: number | null }) {
 }
 
 export function CrtScene({ children, powerCycle }: { children: ReactNode; powerCycle?: unknown }) {
-  const { canvasWarp, crt } = useTheme();
+  const { canvasWarp, crt, hdr } = useTheme();
   // probe once on load so the console reports HTML-in-Canvas support (or its absence)
   useEffect(() => {
     supportsHtmlInCanvas();
@@ -127,20 +127,34 @@ export function CrtScene({ children, powerCycle }: { children: ReactNode; powerC
   if (useCanvas) {
     return (
       <div className="crt crt--canvas">
+        <CrtFilters />
         <div className="crt__screen" ref={screenRef}>
           <CrtCanvasWarp
             curvature={CURVATURE}
             chroma={CHROMA}
             vignette={VIGNETTE}
+            hdr={hdr}
             onUnavailable={() => setCanvasFailed(true)}
           >
             <div className="crt__content">{children}</div>
           </CrtCanvasWarp>
           <div className="crt__mask" />
           <div className="crt__scan" />
+          {/* animated glass life — grain/sweep/flicker/glitch composite over the GPU texture (all
+              pointer-events:none, compositor-only). Visible in canvas mode; crt.css governs. */}
+          <div className="crt__grain" />
+          <div className="crt__sweep" />
+          <div className="crt__reflect">
+            <div className="crt__blob" />
+          </div>
+          <div className="crt__flick" />
+          <div className="crt__glitch" />
           <div className="crt__vign" />
-          <CrtCursor warpK={CURVATURE} />
         </div>
+        {/* caret lives OUTSIDE .crt__screen so its z-index wins in the ROOT stacking context — inside
+            the isolated screen it could sit under a high-z dialog/scrim. Still difference-blends
+            against the composited tube. */}
+        <CrtCursor warpK={CURVATURE} />
       </div>
     );
   }
@@ -156,9 +170,16 @@ export function CrtScene({ children, powerCycle }: { children: ReactNode; powerC
         </div>
         <div className="crt__mask" />
         <div className="crt__scan" />
+        <div className="crt__grain" />
+        <div className="crt__sweep" />
+        <div className="crt__reflect">
+          <div className="crt__blob" />
+        </div>
+        <div className="crt__flick" />
+        <div className="crt__glitch" />
         <div className="crt__vign" />
-        <CrtCursor warpK={null} />
       </div>
+      <CrtCursor warpK={null} />
     </div>
   );
 }

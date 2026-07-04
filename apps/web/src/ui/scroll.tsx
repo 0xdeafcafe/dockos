@@ -37,8 +37,11 @@ export function TermScroll({
   const [ref, visible] = useVisibleLines();
   const [top, setTop] = useState(0);
   const acc = useRef(0);
+  // whether we're pinned to the tail. `follow` auto-advances ONLY while this holds, so a wheel-up
+  // detaches to read scrollback (before, follow ignored the wheel entirely → "can't scroll logs").
+  const atBottom = useRef(true);
   const maxTop = Math.max(0, lines.length - visible);
-  const at = follow ? maxTop : Math.min(top, maxTop);
+  const at = Math.min(top, maxTop);
 
   const onWheel = useCallback(
     (e: WheelEvent<HTMLDivElement>) => {
@@ -46,15 +49,20 @@ export function TermScroll({
       const moved = Math.trunc(acc.current / 18);
       if (moved !== 0) {
         acc.current -= moved * 18;
-        setTop((t) => Math.max(0, Math.min(maxTop, Math.min(t, maxTop) + moved)));
+        setTop((t) => {
+          const next = Math.max(0, Math.min(maxTop, Math.min(t, maxTop) + moved));
+          atBottom.current = next >= maxTop;
+          return next;
+        });
       }
     },
     [maxTop],
   );
 
+  // advance to the tail as new lines arrive, but only while the user is parked at the bottom
   useEffect(() => {
-    if (follow) setTop(maxTop);
-  }, [follow, maxTop]);
+    if (follow && atBottom.current) setTop(maxTop);
+  }, [follow, maxTop, lines.length]);
 
   const thumb = maxTop === 0 ? 0 : Math.round((at / maxTop) * (visible - 1));
 

@@ -130,6 +130,7 @@
 }
 .telem__pre {
   color: var(--accent);
+  line-height: 1; /* seamless block-row tiling, density-independent */
 }
 .telem__log {
   flex: 1;
@@ -150,4 +151,19 @@
   white-space: pre;
   overflow: hidden;
   height: 1lh;
+}
+
+/* ─── RESPONSIVE ─── the filter/sort/count header folds to extra rows rather than
+   clipping the UNITS count; the twin telemetry scopes pan sideways within the band */
+@media (max-width: 900px) {
+  .fleet__bar {
+    flex-wrap: wrap;
+    height: auto;
+    overflow: visible;
+    row-gap: 0;
+  }
+  .telem__charts {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
 }

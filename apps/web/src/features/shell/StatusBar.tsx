@@ -43,7 +43,8 @@ export function StatusBar({
     <header className="statusbar">
       <span className="statusbar__brand"> DOCK/OS </span>
       <span className="statusbar__meta">
-        ● ENGINE <b>{host?.engine ?? "—"}</b> │ UP <b>{host?.uptime ?? "—"}</b> │ UNITS{" "}
+        ● ENGINE <b>{host?.engine ?? "—"}</b> │ UP <b>{host?.uptime ?? "—"}</b> │ CPU{" "}
+        <b>{host?.cpu ?? 0}%</b> │ MEM <b>{host?.memText ?? "—"}</b> │ UNITS{" "}
         <b>
           {running}/{total}
         </b>{" "}

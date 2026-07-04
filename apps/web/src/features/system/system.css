@@ -25,6 +25,7 @@
 }
 .system__pre {
   color: var(--accent);
+  line-height: 1; /* seamless block-row tiling, density-independent */
 }
 .system__regs {
   flex: none;
@@ -33,6 +34,24 @@
 .system__reg {
   white-space: pre;
   color: var(--text);
+}
+
+/* ─── RESPONSIVE ─── the host rack (two braille scopes + a register column) stacks so
+   each scope keeps its own row instead of the whole rack clipping past the tube edge */
+@media (max-width: 900px) {
+  .system__host {
+    flex-direction: column;
+    gap: 0.5lh;
+    overflow: visible;
+  }
+  .system__chartband {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+  .system__chart {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
 }
 
 .imrow {

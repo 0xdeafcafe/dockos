@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { blockChart } from "../../ui/chart.ts";
-import { detailFor } from "../../data/mock.ts";
 import type { Container } from "../../data/mock.ts";
+import type { ContainerPeer } from "@dockos/contract";
 import { useRpcQuery } from "../../rpc/hooks.ts";
 
 type Source = "live" | "1h" | "24h";
 
 function Chart({ data, label, live }: { data: number[]; label: string; live: boolean }) {
-  const rows = blockChart(data, 92, 6);
+  const rows = blockChart(data, 92, 9);
   const peak = Math.round(Math.max(1, ...data));
   const now = Math.round(data.at(-1) ?? 0);
   const avg = Math.round(data.reduce((a, b) => a + b, 0) / Math.max(1, data.length));
@@ -18,8 +18,7 @@ function Chart({ data, label, live }: { data: number[]; label: string; live: boo
     <div className="ov-chart">
       <div className="ov-chart__head">
         <span className="ov-chart__title">
-          {label}{" "}
-          {live ? <span className="ov-chart__live">● LIVE</span> : null}
+          {label} {live ? <span className="ov-chart__live">● LIVE</span> : null}
         </span>
         <span className="detail__dim">
           now <b className={`ink--${tone}`}>{now}%</b> · peak <b>{peak}%</b> · avg <b>{avg}%</b>
@@ -36,17 +35,6 @@ function Chart({ data, label, live }: { data: number[]; label: string; live: boo
   );
 }
 
-const STATS: Array<[string, string]> = [
-  ["PIDS", "14"],
-  ["NET TX", "↑ 2.1G"],
-  ["NET RX", "↓ 18.4G"],
-  ["BLK R", "402M"],
-  ["BLK W", "1.2G"],
-  ["THROTTLED", "0.4%"],
-  ["RESTARTS", "2"],
-  ["OOM KILLS", "0"],
-];
-
 function Register({ label, lines }: { label: string; lines: string[] }) {
   return (
     <div className="overview__reg">
@@ -60,11 +48,44 @@ function Register({ label, lines }: { label: string; lines: string[] }) {
   );
 }
 
-export function OverviewTab({ container }: { container: Container }) {
-  const [source, setSource] = useState<Source>("live");
-  const d = detailFor(container);
-  // LIVE reads the engine ring buffer already on the container; 1h/24h pull deep history from
-  // Prometheus/cadvisor via metrics.containerHistory (empty → flat chart when not scraped).
+// TALKS TO: the units this container is linked to — reachable on a shared user-defined network or a
+// declared compose dependency (from the depends_on label). Each jumps to that unit's detail.
+function PeersRegister({
+  peers,
+  onOpenPeer,
+}: {
+  peers: ContainerPeer[];
+  onOpenPeer?: (name: string) => void;
+}) {
+  return (
+    <div className="overview__reg">
+      <div className="detail__dim">TALKS TO</div>
+      {peers.length === 0 ? <div className="overview__stat ink--dim">— no linked units —</div> : null}
+      {peers.map((p) => (
+        <button
+          key={`${p.name}·${p.reason}`}
+          className="overview__peer"
+          onClick={() => onOpenPeer?.(p.name)}
+        >
+          ▸ {p.name.padEnd(18)} <span className="detail__dim">{p.reason}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function OverviewTab({
+  container,
+  onOpenPeer,
+}: {
+  container: Container;
+  onOpenPeer?: (name: string) => void;
+}) {
+  // a stopped unit has no live engine ring buffer — go straight to archive, drop the LIVE affordance,
+  // but Prometheus/cadvisor history is still there to show.
+  const stopped = container.state === "exited";
+  const [source, setSource] = useState<Source>(stopped ? "1h" : "live");
+  const { data: d } = useRpcQuery("containers.inspect", { id: container.id }, {});
   const archive = useRpcQuery(
     "metrics.containerHistory",
     { name: container.name, window: source === "24h" ? "24h" : "1h" },
@@ -72,12 +93,14 @@ export function OverviewTab({ container }: { container: Container }) {
   );
   const cpuData = source === "live" ? container.cpuHistory : (archive.data?.cpu ?? []);
   const memData = source === "live" ? container.memHistory : (archive.data?.mem ?? []);
+  const sources: Source[] = stopped ? ["1h", "24h"] : ["live", "1h", "24h"];
   return (
     <div className="overview">
       <div className="overview__charts">
         <div className="detail__source">
           <span>SOURCE</span>
-          {(["live", "1h", "24h"] as Source[]).map((s) => (
+          {stopped ? <span className="detail__dim"> ◌ STOPPED · ARCHIVE ONLY </span> : null}
+          {sources.map((s) => (
             <button
               key={s}
               className={`detail__tab ${source === s ? "detail__tab--active" : ""}`}
@@ -93,21 +116,26 @@ export function OverviewTab({ container }: { container: Container }) {
       <div className="overview__stats">
         <Register
           label="IDENTITY"
-          lines={[
-            d.image,
-            `restart ${d.restart}`,
-            `health  ${d.health}`,
-            `ip      ${d.ip}`,
-            `created ${d.created}`,
-          ]}
+          lines={
+            d
+              ? [
+                  d.image,
+                  `restart ${d.restart}`,
+                  `health  ${d.health}`,
+                  `ip      ${d.ip}`,
+                  `created ${d.created}`,
+                ]
+              : ["…"]
+          }
         />
-        <Register label="PORTS" lines={d.ports} />
-        <Register label="MOUNTS" lines={d.mounts} />
-        <Register label="NETWORKS" lines={d.networks} />
+        <Register label="PORTS" lines={d?.ports ?? ["…"]} />
+        <Register label="MOUNTS" lines={d?.mounts ?? ["…"]} />
+        <Register label="NETWORKS" lines={d?.networks ?? ["…"]} />
         <Register
           label="UNIT REGISTERS"
-          lines={STATS.map(([k, v]) => `${k.padEnd(10)} ${v}`)}
+          lines={(d?.registers ?? []).map((r) => `${r.label.padEnd(11)} ${r.value}`)}
         />
+        <PeersRegister peers={d?.peers ?? []} {...(onOpenPeer ? { onOpenPeer } : {})} />
       </div>
     </div>
   );

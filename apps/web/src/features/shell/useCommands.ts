@@ -51,6 +51,12 @@ export function useCommands(setView: (v: View) => void): Command[] {
             },
       },
       {
+        id: "hdr",
+        label: `CRT: HDR BLOOM · ${theme.hdr ? "ON" : "OFF"}`,
+        hint: theme.hdr ? "on — bright glyphs glow past white on HDR displays" : "off — toggle on",
+        run: theme.toggleHdr,
+      },
+      {
         id: "bootmini",
         label: `BOOT: ${theme.bootMini ? "MINI" : "FULL"} SEQUENCE`,
         hint: theme.bootMini ? "mini — switch to full" : "full — switch to mini",

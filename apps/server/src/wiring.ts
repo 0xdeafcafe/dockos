@@ -9,6 +9,9 @@ import { HostService } from "./services/host.ts";
 import { MetricsService } from "./services/metrics.ts";
 import { MetricsQueryService } from "./services/metrics-query.ts";
 import { NetworkService } from "./services/networks.ts";
+import { ImageService } from "./services/images.ts";
+import { VolumeService } from "./services/volumes.ts";
+import { FilesService } from "./services/files.ts";
 import { OidcAuthService } from "./services/oidc-auth.ts";
 import { StackService } from "./services/stacks.ts";
 import { StatsHistoryService } from "./services/stats-history.ts";
@@ -26,6 +29,9 @@ export interface App {
   containers: ContainerService;
   stacks: StackService;
   networks: NetworkService;
+  images: ImageService;
+  volumes: VolumeService;
+  files: FilesService;
   host: HostService;
   auth: AuthService;
   oidcAuth: OidcAuthService | null;
@@ -47,7 +53,7 @@ export function buildApp(env: NodeJS.ProcessEnv): App {
     : null;
 
   const metricsQuery = settings.prometheusUrl
-    ? MetricsQueryService.fromUrl(settings.prometheusUrl)
+    ? MetricsQueryService.fromUrl(settings.prometheusUrl, settings.hostMemQuery)
     : null;
 
   return {
@@ -55,9 +61,12 @@ export function buildApp(env: NodeJS.ProcessEnv): App {
     log,
     engineLabel: target.label,
     stats,
-    containers: new ContainerService(engine, stats, compose),
+    containers: new ContainerService(engine, stats, compose, settings.composeFile),
     stacks: new StackService(engine, stats, compose),
     networks: new NetworkService(engine),
+    images: new ImageService(engine),
+    volumes: new VolumeService(engine),
+    files: new FilesService(engine),
     host: new HostService(engine, stats),
     auth: new AuthService(settings.authMode, oidcAuth),
     oidcAuth,

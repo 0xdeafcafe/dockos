@@ -15,17 +15,19 @@ function flatten(nodes: Node[]): Node[] {
   return nodes.flatMap((n) => (n.children ? [n, ...flatten(n.children)] : [n]));
 }
 
-// nodes whose id is a real fleet container (others — tunnel, collector, the DATA RACK
-// wrapper — have no unit of their own and fall back to inspecting the zone)
-const NON_UNIT = new Set(["rack"]);
-
 export function locateHotspots(zone: Zone, art: string): NodeHotspot[] {
   const lines = art.split("\n");
   const spots: NodeHotspot[] = [];
   const taken: Array<[number, number, number]> = []; // row, col, width already claimed
 
-  for (const node of flatten(zone.nodes)) {
-    if (NON_UNIT.has(node.id)) continue;
+  // Longest labels first: a short name ("api") must not claim the cell of a longer
+  // one that contains it ("api-worker") before that box has been located. `nonUnit`
+  // nodes are presentational (e.g. the "no containers" placeholder) — never clickable.
+  const units = flatten(zone.nodes)
+    .filter((n) => !n.nonUnit)
+    .toSorted((a, b) => b.label.length - a.label.length);
+
+  for (const node of units) {
     const found = firstFree(lines, node.label, taken);
     if (!found) continue;
     taken.push([found.row, found.col, node.label.length]);

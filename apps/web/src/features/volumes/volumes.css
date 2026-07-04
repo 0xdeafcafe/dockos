@@ -35,3 +35,26 @@
 .volrow--pulse {
   animation: strow-pulse 620ms steps(3);
 }
+
+/* INSPECT strip: a docked pane below the table framed in ╔═╗, one rail per field */
+.voldetail {
+  margin-top: 1lh;
+}
+.voldetail__row {
+  display: flex;
+  gap: 1ch;
+}
+.voldetail__key {
+  flex: none;
+  width: 11ch;
+  color: var(--dim);
+}
+.voldetail__val {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+}
+/* mountpoints run deep — break the path token rather than spill the pane */
+.voldetail__path {
+  overflow-wrap: anywhere;
+}

@@ -5,6 +5,7 @@ import { useTheme } from "../../theme/ThemeProvider.tsx";
 import { BANNER_DOCKOS } from "./banners.ts";
 import { beginLogin, checkSession, isDeniedOverride } from "./auth.ts";
 import { DeniedScene } from "./SignIn.tsx";
+import { DEMO } from "../../demo.ts";
 import "./boot.css";
 
 const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -31,7 +32,14 @@ const POST = [
   "  VOLUME RAILS ..................... 18 MOUNTED",
   "  NETWORKS ......................... 6 BRIDGED · 1 SEALED (vpn)",
 ];
-const TTY_OK = [...POST, "  CREW AUTHORITY ................... VERIFIED"];
+// Demo: the machine boots clean, but authority is HELD until the operator identifies at the sealed
+// console (the fake sign-in that follows) — so it can't honestly stamp VERIFIED here yet.
+const TTY_OK = [
+  ...POST,
+  DEMO
+    ? "  CREW AUTHORITY ................... AWAITING OPERATOR"
+    : "  CREW AUTHORITY ................... VERIFIED",
+];
 const TTY_DENIED = [
   ...POST,
   "  CREW AUTHORITY ................... ✖ REVOKED — TERMINATED BY THE COMPANY",
@@ -46,6 +54,33 @@ type Phase = "dark" | "tty" | "alarm" | "denied" | "title";
 // re-create every render and restart the boot timers).
 const BOOT_TIMING_FULL = { dark: 1900, tty: 3, ttyGap: 600, spool: 5, spoolStep: 60 } as const;
 const BOOT_TIMING_MINI = { dark: 700, tty: 8, ttyGap: 250, spool: 22, spoolStep: 40 } as const;
+
+// Auto-mini: if you've booted RECENTLY (<5 min) or OFTEN (≥3 in the last hour), skip the full ritual
+// and run the quick POST — you've seen the show. Decided ONCE per page load (module singleton, so
+// StrictMode's double-invoke can't double-count), and crucially decided BEFORE recording this boot.
+let autoMiniDecision: boolean | null = null;
+function autoMiniBoot(): boolean {
+  if (autoMiniDecision !== null) return autoMiniDecision;
+  const KEY = "dockos.boots";
+  const now = Date.now();
+  let times: number[] = [];
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) times = JSON.parse(raw) as number[];
+  } catch {
+    times = [];
+  }
+  const hourAgo = now - 3_600_000;
+  const recent = times.some((t) => now - t < 300_000);
+  const frequent = times.filter((t) => t > hourAgo).length >= 3;
+  try {
+    localStorage.setItem(KEY, JSON.stringify([...times.filter((t) => t > hourAgo), now].slice(-12)));
+  } catch {
+    /* localStorage unavailable — just run the full boot */
+  }
+  autoMiniDecision = recent || frequent;
+  return autoMiniDecision;
+}
 
 function useBootPhases(onDone: () => void, denied: boolean | null, mini: boolean) {
   const T = mini ? BOOT_TIMING_MINI : BOOT_TIMING_FULL;
@@ -126,10 +161,13 @@ function TtyLine({ line }: { line: string }) {
   const m = /^(.*?\.{3,} )(.*)$/u.exec(line);
   if (m?.[1] !== undefined && m[2] !== undefined && m[2] !== "") {
     const bad = m[2].includes("✖") || m[2].includes("UNVERIFIED");
+    // AWAITING/PENDING is neither pass nor fail — held amber (the demo's pre-sign-in authority line)
+    const held = m[2].includes("AWAITING") || m[2].includes("PENDING");
+    const verdict = bad ? "boot__bad" : held ? "boot__hold" : "boot__good";
     return (
       <div className="boot__line">
         {m[1]}
-        <span className={bad ? "boot__bad" : "boot__good"}>{m[2]}</span>
+        <span className={verdict}>{m[2]}</span>
       </div>
     );
   }
@@ -172,11 +210,15 @@ function ConsolePhase({
 }
 
 // System summary printed under the logo — the machine reporting itself, old-school.
+// demo: authority is held until the operator signs in at the sealed console, so don't claim VERIFIED
+const OPERATOR_ROW: [string, string] = DEMO
+  ? ["OPERATOR", "unidentified · sign-in required"]
+  : ["OPERATOR", "operator · crew authority VERIFIED"];
 const READY_ROWS: Array<[string, string]> = [
   ["ENGINE", "29.0.3 · socket-proxy guarded"],
   ["MANIFEST", "homelab · 39 units · 5 groups"],
   ["RAILS", "18 volumes · 6 networks · 1 sealed"],
-  ["OPERATOR", "operator · crew authority VERIFIED"],
+  OPERATOR_ROW,
   ["UPTIME", "14d 6h · interface 2037"],
 ];
 
@@ -221,7 +263,10 @@ function TitleSlam({ pct }: { pct: number }) {
         <div className="boot__status">
           {ready ? (
             <span className="boot__ready">
-              dock/os&gt; <span className="ink--blink">READY — PRESS ANY KEY</span> <Cursor />
+              <span className="ink--blink">
+                {DEMO ? "IDENTIFY — PRESS ANY KEY" : "READY — PRESS ANY KEY"}
+              </span>{" "}
+              <Cursor />
             </span>
           ) : (
             <span className="ink--dim"> </span>
@@ -248,7 +293,8 @@ export function Boot({ onDone }: { onDone: () => void }) {
       active = false;
     };
   }, []);
-  const { phase, tty, pct } = useBootPhases(onDone, denied, bootMini);
+  // the manual BOOT SEQUENCE setting forces mini; otherwise auto-mini kicks in after recent/frequent boots
+  const { phase, tty, pct } = useBootPhases(onDone, denied, bootMini || autoMiniBoot());
   const played = useRef(false);
 
   useEffect(() => {

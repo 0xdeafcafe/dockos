@@ -10,6 +10,26 @@ export interface ContainerSummary {
   Status: string;
   Created: number;
   Labels: Record<string, string>;
+  Mounts?: Array<{ Type: string; Name?: string }>;
+}
+
+export interface ImageSummary {
+  Id: string;
+  RepoTags: string[] | null;
+  Size: number;
+  Created: number;
+}
+
+export interface VolumeSummary {
+  Name: string;
+  Driver: string;
+  Mountpoint: string;
+  CreatedAt?: string;
+}
+
+export interface ArchiveResult {
+  buf: Buffer;
+  truncated: boolean;
 }
 
 export interface ContainerInspect {
@@ -23,11 +43,26 @@ export interface ContainerInspect {
     StartedAt: string;
     ExitCode: number;
     Health?: { Status: string };
+    OOMKilled?: boolean;
   };
+  RestartCount?: number;
   Config: {
     Env: string[] | null;
     Tty: boolean;
     Labels: Record<string, string>;
+    Image?: string;
+  };
+  HostConfig?: { RestartPolicy?: { Name?: string } };
+  Mounts?: Array<{
+    Type: string;
+    Name?: string;
+    Source: string;
+    Destination: string;
+    RW?: boolean;
+  }>;
+  NetworkSettings?: {
+    Networks?: Record<string, { IPAddress?: string; Aliases?: string[] | null }> | null;
+    Ports?: Record<string, Array<{ HostIp?: string; HostPort?: string }> | null> | null;
   };
 }
 
@@ -36,12 +71,15 @@ export interface ContainerStats {
     cpu_usage: { total_usage: number };
     system_cpu_usage?: number;
     online_cpus?: number;
+    throttling_data?: { periods?: number; throttled_periods?: number };
   };
   memory_stats: {
     usage?: number;
     limit?: number;
     stats?: Record<string, number>;
   };
+  pids_stats?: { current?: number };
+  blkio_stats?: { io_service_bytes_recursive?: Array<{ op: string; value: number }> | null };
   networks?: Record<string, { rx_bytes: number; tx_bytes: number }>;
 }
 
@@ -82,7 +120,12 @@ export interface DockerEngine {
   stopContainer(id: string): Promise<void>;
   listNetworks(): Promise<NetworkSummary[]>;
   inspectNetwork(id: string): Promise<NetworkInspect>;
+  listImages(): Promise<ImageSummary[]>;
+  listVolumes(): Promise<VolumeSummary[]>;
   countVolumes(): Promise<number>;
+  // GET /containers/{id}/archive?path= — a tar of the path (read-only, no exec). Capped at
+  // `maxBytes`; `truncated` is set when the stream was cut short.
+  containerArchive(id: string, path: string, maxBytes: number): Promise<ArchiveResult>;
   version(): Promise<EngineVersion>;
   info(): Promise<EngineInfo>;
 }

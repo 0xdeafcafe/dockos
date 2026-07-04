@@ -110,6 +110,41 @@ export function servicesInStack(map: ComposeProfileMap, stack: string): string[]
   return out;
 }
 
+// Pull a service's verbatim YAML block out of the compose file — the header line `  <service>:`
+// and everything indented under it, up to the next 2-space key (another service or a comment
+// before one). Returns null if the file/service can't be found. Read fresh so edits show up.
+export function extractServiceBlock(path: string, service: string): string | null {
+  let text: string;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch {
+    return null;
+  }
+  const lines = text.split("\n");
+  const esc = service.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const header = new RegExp(`^ {2}${esc}:\\s*(?:#.*)?$`, "u");
+  let start = -1;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (header.test(lines[i] ?? "")) {
+      start = i;
+      break;
+    }
+  }
+  if (start === -1) return null;
+  const out: string[] = [lines[start] ?? ""];
+  for (let i = start + 1; i < lines.length; i += 1) {
+    const line = lines[i] ?? "";
+    if (line.trim() === "") {
+      out.push(line);
+      continue;
+    }
+    if (/^ {2}\S/u.test(line) || /^\S/u.test(line)) break; // next service/comment or top-level key
+    out.push(line);
+  }
+  while (out.length > 0 && (out.at(-1) ?? "").trim() === "") out.pop();
+  return out.join("\n");
+}
+
 export function stackOfService(map: ComposeProfileMap, service: string): string | null {
   const profiles = map.serviceProfiles.get(service);
   if (profiles === undefined) return null;
