@@ -32,6 +32,10 @@
 .shell__main {
   flex: 1;
   min-width: 0;
+  /* min-height too: when the mid folds to a column (≤900px) the main pane must be able to
+     shrink below its content, or it overflows the shell and paints OVER the command/key bars
+     (flex min-size:auto — the P0 mobile footer overlap) */
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -326,8 +330,9 @@
   .statusbar__cluster .statusbar__btn:not(:first-child) {
     display: none;
   }
-  /* claw back the last columns of the tube */
+  /* claw back the last columns of the tube — but keep the key bar clear of the home
+     indicator (viewport-fit=cover extends the layout under it) */
   .shell {
-    padding: 0.5lh 0.5ch;
+    padding: 0.5lh 0.5ch max(0.5lh, env(safe-area-inset-bottom));
   }
 }

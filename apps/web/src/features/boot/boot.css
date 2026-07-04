@@ -138,6 +138,11 @@
 /* the logo prints and settles — a quick phosphor bloom, not a splash slam */
 .boot__logo {
   color: var(--accent);
+  /* the one bend in the one-font-size rule: the DOCK/OS slab is 61 columns of block art,
+     wider than a phone at 14px. Shrink the GLYPHS until the columns fit the panel
+     (61 cols × ~0.62ch advance ≈ /37.8); desktop stays 14px. class specificity outranks
+     the global `* { font-size: 14px !important }` guard. */
+  font-size: min(14px, calc(90vw / 37.8)) !important;
   /* full spread kept; only the SHADOW's alpha is cut, so the glow is fainter but the glyphs stay solid */
   text-shadow:
     0 0 14px color-mix(in srgb, var(--glow) 28%, transparent),

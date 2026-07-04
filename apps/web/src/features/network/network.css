@@ -145,8 +145,30 @@
 /* ─── RESPONSIVE ─── the two-up zone grid collapses to a single column so every area
    gets the full width; wide box-art pans sideways; the legend + boundary rail wrap */
 @media (max-width: 900px) {
+  /* cards hug their art instead of sharing the pane in equal 1fr slices (which crushes every
+     zone once the pane is phone-short), and the map pans vertically — snapping card-by-card so
+     movement still reads as whole cells, not free pixels. A flex column, not the grid: grid
+     intrinsic track sizing kept collapsing rows to the two border rails (the 1fr/auto row's
+     content contribution bottoms out through the min-height:0 chain). */
   .network__zones {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    row-gap: 0.5lh;
+    overflow-y: auto;
+    scroll-snap-type: y proximity;
+  }
+  .netzone {
+    flex: none;
+    scroll-snap-align: start;
+  }
+  /* the base `flex: 1` (basis 0) only works against a definite 1fr slice; sized to content the
+     box needs a content-tracking middle row too (its 1fr row contributes no intrinsic height;
+     the 0-height side rails still don't inflate the auto row) */
+  .netzone > * {
+    flex: none;
+  }
+  .netzone .ink-box {
+    grid-template-rows: 1lh auto 1lh;
   }
   .netzone__art-wrap {
     overflow-x: auto;

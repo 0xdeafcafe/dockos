@@ -79,6 +79,11 @@
 
 .denied__banner {
   color: var(--err);
+  /* the one bend in the one-font-size rule: the slab is 52 columns of block art, which at
+     14px is wider than a phone. Shrink the GLYPHS until the columns fit the panel
+     (52 cols × ~0.62ch advance ≈ /32.3, minus the box's side rails); desktop stays 14px.
+     class specificity outranks the global `* { font-size: 14px !important }` guard. */
+  font-size: min(14px, calc((94vw - 20px) / 32.3)) !important;
   text-align: center;
   align-self: center;
   user-select: none;

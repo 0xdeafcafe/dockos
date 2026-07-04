@@ -142,12 +142,15 @@
   padding: 0.5lh 2ch;
 }
 
-/* terminal scroller: wheel moves whole lines; ░█ column shows position */
+/* terminal scroller: wheel/touch moves whole lines; ░█ column shows position */
 .ink-scroll {
   display: flex;
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  /* vertical touch drags belong to the line-stepping JS handler (rows stay on the cell
+     grid); only horizontal pan is the browser's (the lines strip below, snapped to ch) */
+  touch-action: pan-x;
 }
 .ink-scroll__lines {
   flex: 1;

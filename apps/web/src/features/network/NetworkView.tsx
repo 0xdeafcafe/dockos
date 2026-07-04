@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Box } from "../../ui/box.tsx";
+import { useChSnap } from "../../ui/scroll.tsx";
 import { ActionBar } from "../../ui/actionbar.tsx";
 import { keyOwnedByWidget } from "../../ui/focus.ts";
 import type { Container } from "../../data/mock.ts";
@@ -15,6 +17,18 @@ import "./network.css";
 // filters the fleet to that unit. ↔ marks networks that share a container; ⊘ marks internal nets.
 // Networks with more than COLLAPSE_AT members (e.g. the compose <project>_default, ~40 units) render
 // as a one-line summary by default: ↵ / clicking toggles expand; [I] / the title still jump-to-fleet.
+// The pannable art strip (≤900px it overflows-x): drags land on whole glyph columns via
+// useChSnap, so the box art never parks mid-cell.
+function ArtWrap({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useChSnap(ref);
+  return (
+    <div className="netzone__art-wrap" ref={ref}>
+      {children}
+    </div>
+  );
+}
+
 interface NetCard {
   id: string;
   name: string;
@@ -229,7 +243,7 @@ export function NetworkView(props: {
               >
                 {z.expanded ? (
                   <>
-                    <div className="netzone__art-wrap">
+                    <ArtWrap>
                       <pre className="netzone__art">{z.art}</pre>
                       {z.hotspots.map((h) => (
                         <button
@@ -248,7 +262,7 @@ export function NetworkView(props: {
                           onClick={() => onJump(h.id)}
                         />
                       ))}
-                    </div>
+                    </ArtWrap>
                     <div className="netzone__spring" />
                     <div className="netzone__links">{z.links}</div>
                   </>

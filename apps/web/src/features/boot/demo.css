@@ -26,6 +26,11 @@
 
 .demo__logo {
   color: var(--accent);
+  /* the one bend in the one-font-size rule: the DOCK/OS slab is 61 columns of block art,
+     wider than a phone at 14px. Shrink the GLYPHS until the columns fit the panel
+     (61 cols × ~0.62ch advance ≈ /37.8, minus the box's side rails); desktop stays 14px.
+     class specificity outranks the global `* { font-size: 14px !important }` guard. */
+  font-size: min(14px, calc((94vw - 20px) / 37.8)) !important;
   text-align: center;
   align-self: center;
   user-select: none;
@@ -81,6 +86,13 @@
 .demo-about__actions {
   display: flex;
   justify-content: center;
+}
+
+/* phones: the one-line stamp is wider than the panel — wrap instead of clipping mid-word */
+@media (max-width: 560px) {
+  .demo__sub {
+    white-space: normal;
+  }
 }
 
 @keyframes demo-in {
