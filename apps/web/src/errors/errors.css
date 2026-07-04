@@ -1,0 +1,125 @@
+.fault__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 0, 0, 0.6);
+  animation: fault-in 120ms ease-out;
+}
+
+/* whole-page red crash on entry — hard-cut inverse flashes + a tearing band, then it clears so the
+   fault panel stays legible. The "big error, uh oh" moment. */
+.fault__crash {
+  position: absolute;
+  inset: 0;
+  z-index: 210;
+  pointer-events: none;
+  animation: fault-crash 660ms steps(1) both;
+}
+@keyframes fault-crash {
+  0% {
+    background: var(--err);
+    opacity: 0.92;
+    transform: translateY(0);
+  }
+  10% {
+    opacity: 0;
+  }
+  18% {
+    background: var(--err);
+    opacity: 0.55;
+    transform: translateY(-6px);
+  }
+  26% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  40% {
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(255, 42, 42, 0.55) 0 5px,
+      transparent 5px 13px
+    );
+    opacity: 0.85;
+    transform: translateY(-3px);
+  }
+  52% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  64% {
+    background: rgba(255, 42, 42, 0.4);
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fault__crash {
+    animation: none;
+  }
+}
+
+/* the TUI fault dialog: heavy unicode frame, red phosphor, text only */
+.fault {
+  width: min(64ch, 88vw);
+  background: #120406;
+  color: #ffd7d7;
+  animation: fault-shake 240ms steps(2);
+}
+
+.fault__row {
+  display: flex;
+  gap: 1ch;
+  white-space: pre-wrap;
+}
+.fault__key {
+  color: #c76a6a;
+  min-width: 5ch;
+}
+.fault__kind {
+  color: var(--err);
+  font-weight: 700;
+}
+.fault__meta {
+  color: #c98a7a;
+}
+.fault__hint {
+  color: #e9a0b0;
+}
+.fault__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2ch;
+}
+.fault__btn {
+  white-space: pre;
+}
+.fault__btn:hover,
+.fault__btn:focus {
+  background: var(--err);
+  color: #120406;
+}
+
+@keyframes fault-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fault-shake {
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fault {
+    animation: none;
+  }
+}

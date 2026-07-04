@@ -1,0 +1,189 @@
+/* GAMEFX — SUPERHOT game-feel for the diagnostic mini-games. Same TUI rules: only
+   transform/opacity/color/text-shadow move; structure stays unicode; no borders,
+   radii or box-shadows. Overlays are absolutely positioned inside the .game panel
+   (which is position:relative) and never use mix-blend-mode — the CRT filter above
+   would re-trigger. Every animation is gated under prefers-reduced-motion. */
+
+/* IMPACT FLASH — a keyed overlay so the animation replays crisply on every event.
+   1–2 frames of a full-field wash: accent on a hit, brighter on a point, red on death. */
+.gfx-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+}
+.gfx-flash--hit {
+  background: var(--accent);
+  animation: gfx-flash-lo 110ms steps(1) both;
+}
+.gfx-flash--score {
+  background: var(--accent);
+  animation: gfx-flash-mid 150ms steps(2) both;
+}
+.gfx-flash--death {
+  background: var(--err);
+  animation: gfx-flash-hi 220ms steps(2) both;
+}
+@keyframes gfx-flash-lo {
+  0% {
+    opacity: 0.22;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gfx-flash-mid {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.14;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gfx-flash-hi {
+  0% {
+    opacity: 0.72;
+  }
+  40% {
+    opacity: 0.22;
+  }
+  70% {
+    opacity: 0.46;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* SCREEN SHUDDER — a hard stepped knock on the whole container. */
+.game--shudder {
+  animation: gfx-shudder 200ms steps(2, end) both;
+}
+@keyframes gfx-shudder {
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(0.6ch, -1px);
+  }
+  40% {
+    transform: translate(-0.5ch, 1px);
+  }
+  60% {
+    transform: translate(0.4ch, 1px);
+  }
+  80% {
+    transform: translate(-0.3ch, -1px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+/* CHROMATIC TEAR — red-left / cyan-right split on the whole field, decaying to nothing
+   over ~240ms. Mirrors fleet.css frow--dying's shear, in text-shadow only. */
+.game__field {
+  display: block;
+}
+.game__field--tear {
+  animation: gfx-tear 240ms ease-out both;
+}
+@keyframes gfx-tear {
+  0% {
+    text-shadow:
+      -0.3ch 0 var(--err),
+      0.3ch 0 rgba(60, 240, 255, 0.9);
+    transform: translateX(-0.14ch);
+  }
+  60% {
+    text-shadow:
+      -0.12ch 0 var(--err),
+      0.12ch 0 rgba(60, 240, 255, 0.6);
+  }
+  100% {
+    text-shadow: 0 0 transparent;
+    transform: translateX(0);
+  }
+}
+
+/* WORD SLAM — block-art punch, contained in the game panel. Matches ui/slam.css:
+   a soft dim-and-settle background, the word scales in with a glow and breathes out. */
+.gfx-slam {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  animation: gfx-slam-bg 620ms ease-out both;
+}
+.gfx-slam--accent {
+  --slamc: var(--accent);
+}
+.gfx-slam--err {
+  --slamc: var(--err);
+}
+.gfx-slam__word {
+  color: var(--slamc);
+  text-align: center;
+  user-select: none;
+  animation: gfx-slam-word 620ms ease-out both;
+}
+@keyframes gfx-slam-bg {
+  0% {
+    background: rgba(0, 0, 0, 0);
+    opacity: 0;
+  }
+  16% {
+    background: rgba(0, 0, 0, 0.32);
+    opacity: 1;
+  }
+  66% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gfx-slam-word {
+  0% {
+    transform: scale(1.3);
+    opacity: 0;
+    text-shadow: 0 0 30px var(--slamc);
+  }
+  35% {
+    transform: scale(1);
+    opacity: 1;
+    text-shadow:
+      0 0 22px var(--slamc),
+      0 0 6px var(--slamc);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+    text-shadow: 0 0 14px var(--slamc);
+  }
+}
+
+/* Reduced motion: kill every game-feel animation. The games also gate these in JS
+   (the classes/overlays aren't rendered), so this is a belt-and-braces backstop —
+   play stays fully functional, just flat. */
+@media (prefers-reduced-motion: reduce) {
+  .gfx-flash,
+  .game--shudder,
+  .game__field--tear,
+  .gfx-slam,
+  .gfx-slam__word {
+    animation: none;
+  }
+  .gfx-flash,
+  .gfx-slam {
+    display: none;
+  }
+}

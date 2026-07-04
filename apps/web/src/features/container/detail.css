@@ -1,0 +1,243 @@
+.detail {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+}
+.detail__band {
+  display: flex;
+  gap: 2ch;
+  white-space: pre;
+  overflow: hidden;
+}
+.detail__band b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* header row 1: prominent inverse BACK cap · breadcrumb · state lamp on the right */
+.detail__head {
+  display: flex;
+  align-items: baseline;
+  gap: 2ch;
+  height: 1lh;
+  white-space: pre;
+  overflow: hidden;
+}
+.detail__back {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+  white-space: pre;
+}
+.detail__back:hover,
+.detail__back:focus-visible {
+  background: var(--err);
+  color: var(--bg);
+}
+.detail__crumb {
+  color: var(--dim);
+}
+.detail__crumb b {
+  color: var(--accent);
+  font-weight: 700;
+}
+.detail__spacer {
+  flex: 1;
+}
+.detail__statelamp {
+  white-space: pre;
+}
+.detail__dim {
+  color: var(--dim);
+}
+
+/* header row 2: spaced meta registers, no longer crammed onto the crumb line */
+.detail__meta {
+  display: flex;
+  gap: 3ch;
+  height: 1lh;
+  white-space: pre;
+  overflow: hidden;
+  color: var(--dim);
+}
+.detail__meta b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* tab strip: chunky inverse-active tabs with keycaps, a rule fills the remainder */
+.detail__tabs {
+  display: flex;
+  white-space: pre;
+  height: 1lh;
+  overflow: hidden;
+}
+.detail__tab {
+  color: var(--dim);
+  white-space: pre;
+}
+.detail__tabkey {
+  color: var(--accent);
+  font-weight: 700;
+}
+.detail__tab--active {
+  background: var(--accent);
+  color: var(--bg);
+}
+.detail__tab:hover:not(.detail__tab--active),
+.detail__tab:focus-visible:not(.detail__tab--active) {
+  background: var(--accent);
+  color: var(--bg);
+}
+.detail__tab--active .detail__tabkey,
+.detail__tab:hover .detail__tabkey,
+.detail__tab:focus-visible .detail__tabkey {
+  color: var(--bg);
+}
+.detail__tabfill {
+  flex: 1;
+}
+.detail__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.detail__chart {
+  color: var(--accent);
+}
+
+/* live-engine scope: 0–100 axis rail, threshold-toned trace, sample-window footer */
+.ov-chart {
+  margin-bottom: 1lh;
+}
+.ov-chart__head {
+  display: flex;
+  gap: 2ch;
+  white-space: pre;
+  overflow: hidden;
+}
+.ov-chart__title {
+  color: var(--text);
+}
+.ov-chart__live {
+  color: var(--ok);
+  animation: ov-live 1.4s steps(1) infinite;
+}
+@keyframes ov-live {
+  50% {
+    opacity: 0.35;
+  }
+}
+.ov-chart__head b {
+  font-weight: 700;
+}
+.ov-chart__body {
+  display: flex;
+}
+.ov-chart__axis {
+  color: var(--dim);
+  white-space: pre;
+  user-select: none;
+}
+.ov-chart__plot {
+  overflow: hidden;
+}
+.ov-chart__foot {
+  color: var(--dim);
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+}
+.detail__actions {
+  display: flex;
+  gap: 2ch;
+  white-space: pre;
+}
+.detail__act {
+  color: var(--text);
+}
+.detail__act:hover,
+.detail__act:focus {
+  background: var(--accent);
+  color: var(--bg);
+}
+.detail__act--danger:hover,
+.detail__act--danger:focus {
+  background: var(--err);
+  color: var(--bg);
+}
+
+.logline {
+  white-space: pre;
+}
+.logline--info .logline__lvl {
+  color: var(--ok);
+}
+.logline--warn .logline__lvl {
+  color: var(--warn);
+}
+.logline--error .logline__lvl {
+  color: var(--err);
+}
+.logline--debug .logline__lvl {
+  color: var(--dim);
+}
+.logline__time {
+  color: var(--dim);
+}
+.logline__src {
+  color: var(--accent);
+}
+.logline__hit {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.env__row {
+  white-space: pre;
+}
+.env__key {
+  color: var(--text);
+}
+.env__val {
+  color: var(--dim);
+}
+.env__noise {
+  color: var(--accent);
+
+  user-select: none;
+}
+.env__btn {
+  color: var(--dim);
+}
+.env__btn:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.overview {
+  display: flex;
+  gap: 3ch;
+  min-height: 0;
+  flex: 1;
+}
+.overview__charts {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.overview__stats {
+  width: 34ch;
+  flex: none;
+  overflow: hidden;
+}
+.overview__reg + .overview__reg {
+  margin-top: 1lh; /* cell-aligned: exactly one row of air between registers */
+}
+.overview__stat {
+  white-space: pre;
+  overflow: hidden;
+}

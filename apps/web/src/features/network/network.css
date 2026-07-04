@@ -1,0 +1,111 @@
+.network {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  color: var(--text);
+}
+.network__legend {
+  color: var(--dim);
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+}
+.network__zones {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 1fr;
+  gap: 0 2ch;
+  overflow: hidden;
+}
+.network__zones > .netzone:first-child {
+  grid-column: 1 / -1;
+}
+.netzone {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  text-align: left;
+  color: var(--text);
+  transition: opacity 120ms steps(3);
+}
+/* focus-linked relations: areas the focused zone talks to stay lit; the rest dim back */
+.netzone--dim {
+  opacity: 0.32;
+}
+.netzone > * {
+  flex: 1;
+  min-height: 0;
+}
+/* the keyboard cursor and the pointer speak one language: focused zone = inverse title */
+.netzone__title:hover,
+.netzone__title:focus-visible {
+  background: var(--accent);
+  color: var(--bg);
+}
+.netzone__art-wrap {
+  position: relative;
+  overflow: hidden;
+}
+.netzone__art {
+  color: var(--text);
+  overflow: hidden;
+}
+/* per-unit hotspots overlaid on the art grid: hover/focus highlights the box beneath.
+   NO mix-blend-mode — a blend layer inside the CRT-filtered content defeats the SVG filter's
+   raster cache and forces a continuous re-filter (jittery warp), the one thing every other
+   page avoids. A plain translucent accent wash reads the same and stays cached. */
+.netnode {
+  position: absolute;
+  height: 1lh;
+  color: transparent;
+  background: transparent;
+}
+.netnode:hover,
+.netnode:focus-visible {
+  background: var(--accent);
+  opacity: 0.32;
+}
+.netzone__spring {
+  flex: 1;
+}
+/* cross-area edges pinned to the cell floor — the same ⇢/⇠ glyphs everywhere */
+.netzone__links {
+  color: var(--dim);
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+}
+
+/* the BOUNDARIES rail: every inter-area / edge-of-world flow as a directed chip. The chips
+   for the focused area light up; the rest dim, so navigating areas reveals who crosses to whom. */
+.network__boundaries {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 2ch;
+  height: 1lh;
+  overflow: hidden;
+  white-space: pre;
+}
+.network__blabel {
+  color: var(--dim);
+  font-weight: 700;
+}
+.nbedge {
+  white-space: pre;
+  color: var(--dim);
+}
+/* one restrained scheme: everything dim, the focused area's flows brighten to text/accent —
+   no per-type rainbow. The sealed VPN crossing is the only one that earns a colour (warn). */
+.nbedge--off {
+  opacity: 0.55;
+}
+.nbedge--on {
+  color: var(--text);
+}
+.nbedge--on.nbedge--vpn {
+  color: var(--warn);
+}

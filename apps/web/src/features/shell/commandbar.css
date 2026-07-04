@@ -1,0 +1,71 @@
+.cmdbar {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 1ch;
+  padding: 0 1ch;
+  height: 1lh;
+  overflow: visible;
+  white-space: pre;
+  /* a solid band so the input reads clearly against the tube's darkened lower edge */
+  background: var(--bg);
+}
+/* inverse cap makes the prompt a bright anchor at the bottom edge */
+.cmdbar__prompt {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+}
+.cmdbar__field {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  flex: 1;
+}
+.cmdbar__real {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+.cmdbar__view {
+  white-space: pre;
+  overflow: hidden;
+  color: var(--text);
+}
+/* the deck completes your thought: best match rides the cursor, TAB accepts */
+.cmdbar__ghost {
+  color: var(--dim);
+  white-space: pre;
+  overflow: hidden;
+}
+/* match strip floats over the key bar row above — no reflow while you type */
+.cmdbar__hint {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  height: 1lh;
+  overflow: hidden;
+  white-space: pre;
+  padding: 0 1ch;
+  background: var(--bg);
+  color: var(--dim);
+}
+.cmdbar__ok {
+  color: var(--ok);
+}
+.cmdbar__err {
+  color: var(--err);
+  animation: cmdbar-flash 360ms steps(3);
+}
+@keyframes cmdbar-flash {
+  0% {
+    background: var(--err);
+    color: var(--bg);
+    transform: translateX(-2px);
+  }
+  50% {
+    opacity: 0.3;
+    transform: translateX(2px);
+  }
+}

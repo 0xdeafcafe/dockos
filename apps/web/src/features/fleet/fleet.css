@@ -1,0 +1,153 @@
+.fleet {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+/* persistent header bar: filter + sort + count — nothing hides behind a key */
+.fleet__bar {
+  display: flex;
+  gap: 2ch;
+  height: 1lh;
+  overflow: hidden;
+  white-space: pre;
+  align-items: baseline;
+}
+.fleet__sort {
+  color: var(--text);
+}
+.fleet__sort:hover,
+.fleet__sort:focus-visible {
+  background: var(--accent);
+  color: var(--bg);
+}
+.fleet__sort:hover .ink--accent,
+.fleet__sort:focus-visible .ink--accent {
+  color: var(--bg);
+}
+
+/* ONE selection model: hover moves the selection; the inverse bar IS the focus */
+.frow {
+  display: block;
+  width: 100%;
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+  color: var(--text);
+}
+.frow--sel {
+  background: var(--accent);
+  color: var(--bg);
+  text-shadow: none;
+}
+.frow--sel * {
+  text-shadow: none;
+}
+.frow--sel .ink--dim,
+.frow--sel .ink--ok,
+.frow--sel .ink--warn,
+.frow--sel .ink--err,
+.frow--sel .ink--accent {
+  color: var(--bg);
+}
+.frow--exited {
+  opacity: 0.55;
+}
+
+/* SUPERHOT choreography */
+.frow--dying {
+  color: var(--err);
+  animation: frow-die 90ms steps(2) infinite;
+}
+/* kill reads differently from restart: the row DECAYS DOWNWARD into ash, no glitch energy */
+.frow--ash {
+  color: var(--dim);
+  animation: frow-ash 520ms ease-in both;
+}
+@keyframes frow-ash {
+  0% {
+    color: var(--err);
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0.6lh);
+    opacity: 0;
+  }
+}
+.frow--rebuild {
+  color: var(--accent);
+  text-shadow: 0 0 8px var(--glow);
+}
+.frow--crawl {
+  color: var(--warn);
+  animation: frow-crawl 850ms ease-out both;
+}
+
+@keyframes frow-die {
+  50% {
+    transform: translateX(2px);
+    opacity: 0.6;
+  }
+}
+@keyframes frow-crawl {
+  0% {
+    filter: blur(0);
+    transform: translateX(0) skewX(0deg);
+    opacity: 1;
+  }
+  40% {
+    filter: blur(1.4px);
+    transform: translateX(1.5ch) skewX(-8deg);
+  }
+  100% {
+    filter: blur(0.4px);
+    transform: translateX(0) skewX(0deg);
+    opacity: 0.65;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frow--dying,
+  .frow--crawl,
+  .frow--ash {
+    animation: none;
+  }
+}
+
+/* the bottom cockpit band — telemetry, ship log, mini-inspector */
+.telem {
+  flex: none;
+}
+.telem__charts {
+  display: flex;
+  gap: 4ch;
+  overflow: hidden;
+}
+.telem__label {
+  color: var(--dim);
+  white-space: pre;
+}
+.telem__pre {
+  color: var(--accent);
+}
+.telem__log {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.telem__dim {
+  color: var(--text);
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+}
+.telem__logtime {
+  color: var(--dim);
+}
+.telem__inspect {
+  color: var(--text);
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+}

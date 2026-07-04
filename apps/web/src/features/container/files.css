@@ -1,0 +1,94 @@
+/* FILES tab — tree browser. Structure is unicode rails (├── └── │); CSS only colours. */
+
+.files__band {
+  display: flex;
+  gap: 2ch;
+  height: 1lh;
+  white-space: pre;
+  overflow: hidden;
+}
+.files__label {
+  color: var(--accent);
+}
+.files__path {
+  color: var(--text);
+}
+.files__count {
+  color: var(--dim);
+}
+
+/* ONE selection model, same as the fleet table: hover moves the cursor, the inverse bar IS it */
+.files__row {
+  display: block;
+  width: 100%;
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+  color: var(--text);
+}
+.files__rail {
+  color: var(--dim);
+}
+.files__dir,
+.files__dirname {
+  color: var(--accent);
+}
+.files__file {
+  color: var(--dim);
+}
+.files__name {
+  color: var(--text);
+}
+.files__mount {
+  color: var(--ok);
+}
+.files__meta {
+  color: var(--dim);
+}
+.files__row--sel {
+  background: var(--accent);
+  color: var(--bg);
+  text-shadow: none;
+}
+.files__row--sel .files__rail,
+.files__row--sel .files__dir,
+.files__row--sel .files__dirname,
+.files__row--sel .files__file,
+.files__row--sel .files__name,
+.files__row--sel .files__mount,
+.files__row--sel .files__meta {
+  color: var(--bg);
+  text-shadow: none;
+}
+
+/* preview deck below the tree: header rule + last rows, dim */
+.files__preview {
+  flex: none;
+  overflow: hidden;
+}
+.files__phead {
+  height: 1lh;
+  white-space: pre;
+  overflow: hidden;
+  color: var(--dim);
+}
+.files__pline {
+  height: 1lh;
+  white-space: pre;
+  overflow: hidden;
+  color: var(--dim);
+}
+.files__pbin {
+  color: var(--warn);
+}
+
+/* footer hint: every key's visible twin, dim chrome with accent keys */
+.files__hint {
+  height: 1lh;
+  white-space: pre;
+  overflow: hidden;
+  color: var(--dim);
+}
+.files__key {
+  color: var(--accent);
+}

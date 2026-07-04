@@ -1,0 +1,272 @@
+.shell {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  /* vertical breathing so the status bar and command line clear the tube's curved edges */
+  padding: 0.5lh 1ch;
+  /* very-wide displays: cap the raster and center the tube rather than stretching tables thin */
+  max-width: 176ch;
+  margin: 0 auto;
+  animation: shell-in 360ms ease-out both;
+}
+@keyframes shell-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.shell__mid {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  gap: 1ch;
+}
+.shell__nav {
+  width: 20ch;
+  display: flex;
+  flex-direction: column;
+}
+.shell__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.statusbar {
+  display: flex;
+  gap: 2ch;
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+}
+/* inverse brand cap — the masthead reads like a mode lamp */
+.statusbar__brand {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+}
+.statusbar__meta {
+  color: var(--dim);
+}
+.statusbar__meta b {
+  color: var(--text);
+  font-weight: 500;
+}
+.statusbar__alertgroup {
+  display: flex;
+  gap: 1ch;
+  white-space: pre;
+}
+.statusbar__alert {
+  background: var(--err);
+  color: var(--bg);
+  font-weight: 700;
+  white-space: pre;
+  animation: statusbar-alert 900ms steps(1) infinite;
+}
+.statusbar__alert:hover,
+.statusbar__alert:focus-visible {
+  background: var(--warn);
+  color: var(--bg);
+}
+.statusbar__alert--muted {
+  background: transparent;
+  color: var(--dim);
+  animation: none;
+}
+.statusbar__silence {
+  color: var(--dim);
+  white-space: pre;
+}
+.statusbar__silence:hover,
+.statusbar__silence:focus-visible {
+  background: var(--accent);
+  color: var(--bg);
+}
+@keyframes statusbar-alert {
+  50% {
+    background: transparent;
+    color: var(--err);
+  }
+}
+.statusbar__spacer {
+  flex: 1;
+}
+.statusbar__cluster {
+  display: flex;
+  gap: 2ch;
+}
+.statusbar__btn {
+  color: var(--dim);
+}
+.statusbar__btn:hover,
+.statusbar__btn:focus-visible {
+  background: var(--accent);
+  color: var(--bg);
+}
+.statusbar__signout:hover,
+.statusbar__signout:focus-visible {
+  background: var(--err);
+  color: var(--bg);
+}
+.statusbar__clock {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* HTML-in-Canvas advisory: one-line strip under the masthead when the browser runs the flat
+   fallback. Dismissible; the flag path copies on click (chrome:// can't be linked). */
+.canvashint {
+  display: flex;
+  align-items: baseline;
+  gap: 1ch;
+  white-space: pre;
+  height: 1lh;
+  overflow: hidden;
+  padding: 0 1ch;
+}
+.canvashint__mark {
+  color: var(--warn);
+}
+.canvashint__text {
+  color: var(--dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.canvashint__flag {
+  color: var(--accent);
+}
+.canvashint__flag:hover,
+.canvashint__flag:focus-visible {
+  background: var(--accent);
+  color: var(--bg);
+}
+.canvashint__spacer {
+  flex: 1;
+}
+.canvashint__x {
+  color: var(--dim);
+}
+.canvashint__x:hover,
+.canvashint__x:focus-visible {
+  background: var(--warn);
+  color: var(--bg);
+}
+
+.nav__item {
+  display: block;
+  width: 100%;
+  white-space: pre;
+  color: var(--dim);
+  height: 1lh;
+  overflow: hidden;
+}
+.nav__item--active {
+  background: var(--accent);
+  color: var(--bg);
+}
+/* hover = the keyboard-focus state (inverse video) */
+.nav__item:hover:not(.nav__item--active) {
+  background: var(--accent);
+  color: var(--bg);
+}
+.nav__sep {
+  color: var(--dim);
+  opacity: 0.5;
+  user-select: none;
+}
+/* a unit is unhealthy: the CONTAINERS deck item flickers red until you look or silence */
+.nav__item--alert {
+  color: var(--err);
+  animation: nav-alert 820ms steps(1) infinite;
+}
+@keyframes nav-alert {
+  50% {
+    background: var(--err);
+    color: var(--bg);
+  }
+}
+/* images carry crit/high CVEs: SYSTEM warns amber, steady (not an alarm, a standing flag) */
+.nav__item--warn {
+  color: var(--warn);
+}
+
+.keybar {
+  display: flex;
+  gap: 2ch;
+  color: var(--dim);
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+}
+.keybar__item {
+  white-space: pre;
+}
+/* key caps carry the weight of a focused control — you can't miss what a key does */
+.keybar__cap {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+}
+.keybar__sep {
+  opacity: 0.5;
+}
+.keybar__spacer {
+  flex: 1;
+}
+.keybar__crumb {
+  color: var(--accent);
+}
+/* the Omni-piOS-v2.1.01p stamp, ours */
+.keybar__stamp {
+  color: var(--dim);
+  opacity: 0.7;
+}
+
+/* view switch: an instant screen redraw — no slide/roll (that reads as a web transition,
+   not a terminal). Just a single-frame phosphor blip as the new page is painted. */
+.shell__roll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  animation: page-redraw 70ms steps(2) both;
+}
+@keyframes page-redraw {
+  0% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell__roll {
+    animation: none;
+  }
+}
+
+.placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1lh;
+  color: var(--dim);
+}
+.placeholder b {
+  color: var(--accent);
+}
+.placeholder__pong {
+  color: var(--dim);
+  white-space: pre;
+}
+.placeholder__pong:hover,
+.placeholder__pong:focus-visible {
+  background: var(--accent);
+  color: var(--bg);
+}

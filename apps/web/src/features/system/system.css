@@ -1,0 +1,58 @@
+.system {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+/* host telemetry rack: two braille scopes + a register column */
+.system__host {
+  display: flex;
+  gap: 4ch;
+  overflow: hidden;
+}
+.system__chart {
+  min-width: 0;
+}
+.system__chartband {
+  display: flex;
+  gap: 2ch;
+  color: var(--dim);
+  white-space: pre;
+}
+.system__chartband b {
+  color: var(--text);
+  font-weight: 500;
+}
+.system__pre {
+  color: var(--accent);
+}
+.system__regs {
+  flex: none;
+  overflow: hidden;
+}
+.system__reg {
+  white-space: pre;
+  color: var(--text);
+}
+
+.imrow {
+  display: block;
+  width: 100%;
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+  color: var(--text);
+}
+.imrow--sel {
+  background: var(--accent);
+  color: var(--bg);
+}
+.imrow--sel .ink--ok,
+.imrow--sel .ink--warn,
+.imrow--sel .ink--err,
+.imrow--sel .ink--dim {
+  color: var(--bg);
+}
+.imrow--pulse {
+  animation: strow-pulse 620ms steps(3);
+}

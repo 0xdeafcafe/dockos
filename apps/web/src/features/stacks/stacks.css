@@ -1,0 +1,67 @@
+.stacks {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.stacks__dim {
+  color: var(--dim);
+  white-space: pre;
+}
+.stacks__dim b {
+  color: var(--text);
+  font-weight: 500;
+}
+.strow {
+  display: block;
+  width: 100%;
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+  color: var(--text);
+}
+.strow--sel {
+  background: var(--accent);
+  color: var(--bg);
+}
+/* phase-0 action feedback: the row takes the hit */
+.strow--pulse {
+  animation: strow-pulse 620ms steps(3);
+}
+@keyframes strow-pulse {
+  0% {
+    background: var(--accent);
+    color: var(--bg);
+    transform: translateX(1ch);
+  }
+  50% {
+    opacity: 0.4;
+    transform: translateX(-0.5ch);
+  }
+  100% {
+    transform: none;
+  }
+}
+.strow--sel .strow__up,
+.strow--sel .strow__partial,
+.strow--sel .strow__down,
+.strow--sel .stacks__dim {
+  color: var(--bg);
+}
+.strow__up {
+  color: var(--ok);
+}
+.strow__partial {
+  color: var(--warn);
+}
+.strow__down {
+  color: var(--dim);
+}
+.stacks__cmd {
+  color: var(--accent);
+  white-space: pre;
+}
+.stacks__note {
+  color: var(--warn);
+  white-space: pre;
+}

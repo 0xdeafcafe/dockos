@@ -1,0 +1,340 @@
+/* web-ink: the unicode design system. Structure is characters; CSS gives colour, glow, flow. */
+
+.ink--text {
+  color: var(--text);
+}
+.ink--dim {
+  color: var(--dim);
+}
+.ink--accent {
+  color: var(--accent);
+}
+.ink--ok {
+  color: var(--ok);
+}
+.ink--warn {
+  color: var(--warn);
+}
+.ink--err {
+  color: var(--err);
+}
+.ink--bold {
+  font-weight: 700;
+}
+.ink--inv {
+  background: var(--accent);
+  color: var(--bg);
+}
+.ink--blink {
+  animation: ink-blink 1s steps(1) infinite;
+}
+@keyframes ink-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* the classic terminal cursor: solid beat, then quick phosphor decay */
+.ink-cursor {
+  color: var(--accent);
+  text-shadow: 0 0 7px var(--glow);
+  animation: ink-cursor 1.12s infinite;
+}
+@keyframes ink-cursor {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  60%,
+  90% {
+    opacity: 0.06;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.ink-input {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  flex: 1;
+}
+.ink-input__real {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+.ink-input__view {
+  white-space: pre;
+  overflow: hidden;
+}
+
+.ink-rule {
+  overflow: hidden;
+  white-space: nowrap;
+  height: 1lh;
+  user-select: none;
+  opacity: 0.8;
+}
+
+.ink-box {
+  display: grid;
+  grid-template-columns: 1ch 1fr 1ch;
+  grid-template-rows: 1lh 1fr 1lh;
+  min-height: 0;
+}
+/* panes grow to their column — tables run the full height of the deck */
+.ink-box--fill {
+  flex: 1;
+  min-height: 0;
+}
+.ink-box__actions {
+  white-space: pre;
+  color: var(--dim);
+  user-select: auto;
+}
+.ink-box__cnr,
+.ink-box__edge,
+.ink-box__side {
+  user-select: none;
+}
+.ink-box__edge {
+  display: flex;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ink-box__title {
+  color: var(--accent);
+  white-space: pre;
+}
+.ink-box__fill {
+  flex: 1;
+  overflow: hidden;
+}
+.ink-box__side {
+  width: 1ch;
+  overflow: hidden;
+  word-break: break-all;
+  /* gapless vertical border: │ glyphs must touch, so this column runs tighter than text rows */
+  line-height: 1;
+  /* CRITICAL: the 400-glyph rail must never size the grid row — it fills whatever the body needs.
+     Without this, dialogs inflate to the rail's intrinsic height (P0: empty full-screen fault box). */
+  height: 0;
+  min-height: 100%;
+}
+
+/* the focused pane announces itself: inverse-video title on an accent frame */
+.ink-box--focus .ink-box__title {
+  background: var(--accent);
+  color: var(--bg);
+  text-shadow: none;
+  font-weight: 700;
+}
+.ink-box__body {
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ink-box__body--pad {
+  padding: 0 1ch;
+}
+
+/* terminal scroller: wheel moves whole lines; ░█ column shows position */
+.ink-scroll {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.ink-scroll__lines {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.ink-scroll__line {
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+}
+.ink-scroll__bar {
+  width: 1ch;
+  white-space: pre;
+  color: var(--dim);
+  user-select: none;
+}
+
+.ink-table__head {
+  color: var(--dim);
+  white-space: pre;
+}
+
+/* the action bar: every shortcut's visible, clickable twin */
+.ink-actionbar {
+  display: flex;
+  gap: 2ch;
+  white-space: pre;
+  height: 1lh;
+  overflow: hidden;
+}
+.ink-actionbar__lead {
+  color: var(--text);
+  white-space: pre;
+}
+.ink-act {
+  color: var(--dim);
+  white-space: pre;
+}
+.ink-act__key {
+  color: var(--accent);
+}
+.ink-act:not(.ink-act--static):hover,
+.ink-act:not(.ink-act--static):focus-visible {
+  background: var(--accent);
+  color: var(--bg);
+}
+.ink-act:hover .ink-act__key,
+.ink-act:focus-visible .ink-act__key {
+  color: var(--bg);
+}
+.ink-act--danger:hover,
+.ink-act--danger:focus-visible {
+  background: var(--err);
+  color: var(--bg);
+}
+.ink-act[disabled] {
+  opacity: 0.4;
+}
+
+/* the SUPERHOT decision dialog — centered modal over a dim scrim, two big buttons */
+.confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 6, 12, 0.74);
+  animation: confirm-scrim 120ms steps(2) both;
+}
+.confirm--danger {
+  background: rgba(18, 2, 4, 0.74);
+}
+.confirm__dialog {
+  width: min(58ch, 90vw);
+  animation: confirm-pop 150ms steps(3) both;
+}
+.confirm__dialog > .ink-box {
+  background: var(--bg);
+}
+.confirm--danger .confirm__dialog > .ink-box {
+  background: #120406;
+}
+.confirm__q {
+  text-align: center;
+  color: var(--text);
+  font-weight: 700;
+  white-space: pre;
+  overflow: hidden;
+}
+.confirm__detail {
+  text-align: center;
+  color: var(--dim);
+  white-space: pre;
+  overflow: hidden;
+}
+.confirm__gap {
+  height: 1lh;
+}
+.confirm__btns {
+  display: flex;
+  gap: 4ch;
+  justify-content: center;
+  white-space: pre;
+}
+.confirm__btn {
+  color: var(--dim);
+  white-space: pre;
+}
+.confirm__btn--go {
+  color: var(--accent);
+}
+.confirm--danger .confirm__btn--go {
+  color: var(--err);
+}
+.confirm__btn:hover,
+.confirm__btn:focus-visible {
+  background: var(--accent);
+  color: var(--bg);
+}
+.confirm--danger .confirm__btn--go:hover,
+.confirm--danger .confirm__btn--go:focus-visible {
+  background: var(--err);
+  color: var(--bg);
+}
+@keyframes confirm-scrim {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes confirm-pop {
+  0% {
+    opacity: 0;
+    transform: scale(1.14);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.98);
+  }
+}
+
+/* the SUPERHOT [Y/N] beat — an inline red strip that replaces the action bar */
+.ink-confirm {
+  display: flex;
+  gap: 2ch;
+  white-space: pre;
+  height: 1lh;
+  overflow: hidden;
+  color: var(--err);
+  animation: ink-confirm-in 160ms steps(2) both;
+}
+.ink-confirm__q {
+  background: var(--err);
+  color: var(--bg);
+  font-weight: 700;
+}
+.ink-confirm .ink-act__key {
+  color: var(--err);
+}
+.ink-confirm .ink-act:hover,
+.ink-confirm .ink-act:focus-visible {
+  background: var(--err);
+  color: var(--bg);
+}
+@keyframes ink-confirm-in {
+  0% {
+    opacity: 0;
+    transform: translateX(2ch);
+  }
+}
+
+.ink-spark {
+  white-space: pre;
+}
+.ink-bar {
+  white-space: pre;
+}
+.ink-dot--up {
+  text-shadow: 0 0 6px currentColor;
+}
+.ink-dot--unhealthy {
+  text-shadow: 0 0 8px currentColor;
+  animation: ink-pulse 1.1s ease-in-out infinite;
+}
+@keyframes ink-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}

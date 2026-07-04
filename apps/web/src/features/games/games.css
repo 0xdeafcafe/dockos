@@ -1,0 +1,62 @@
+/* GAMES — retro diagnostics buried in the console. Same TUI rules as everywhere:
+   rows are 1lh of pre text, structure is glyphs, colour comes from the ink vars. */
+
+.game {
+  position: relative; /* the ch-probe span measures inside this box */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--text);
+}
+
+/* score band above the field — institutional voice, one row */
+.game__status {
+  display: flex;
+  justify-content: space-between;
+  gap: 2ch;
+  height: 1lh;
+  white-space: pre;
+  overflow: hidden;
+}
+
+.game__row {
+  height: 1lh;
+  white-space: pre;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* the SUPERHOT beat: game-over slams in as inverse video and strobes */
+.game__flash {
+  background: var(--err);
+  color: var(--bg);
+  font-weight: 700;
+  animation: game-flash 700ms steps(1) infinite;
+}
+@keyframes game-flash {
+  50% {
+    background: var(--accent);
+  }
+}
+
+/* one hard knock when a point lands / the packet dies */
+.game--shake {
+  animation: game-shake 160ms steps(2);
+}
+@keyframes game-shake {
+  25% {
+    transform: translateX(0.5ch);
+  }
+  75% {
+    transform: translateX(-0.5ch);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game__flash,
+  .game--shake {
+    animation: none; /* the inverse row stays; only the strobe/knock goes */
+  }
+}

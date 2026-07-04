@@ -1,0 +1,25 @@
+{
+  "name": "dockos",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter @dockos/web build",
+    "dev": "pnpm --filter @dockos/web dev",
+    "start": "node --experimental-strip-types apps/server/src/main.ts",
+    "lint": "oxlint --deny-warnings",
+    "fmt": "oxfmt --write .",
+    "fmt:check": "oxfmt --check .",
+    "typecheck": "tsgo --noEmit -p tsconfig.json",
+    "verify": "pnpm fmt:check && pnpm lint && pnpm typecheck"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "latest",
+    "oxfmt": "^0.55.0",
+    "oxlint": "^1.70.0",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@11.9.0"
+}

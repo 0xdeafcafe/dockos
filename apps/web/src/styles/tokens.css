@@ -1,0 +1,62 @@
+:root {
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+  /* unicode-block mouse pointers: solid block default, hollow block over clickables */
+  --cursor-block: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='19'><rect x='1' y='1' width='9' height='17' fill='%23aecbff' fill-opacity='0.85' stroke='%23060a12'/></svg>")
+    5 9;
+  --cursor-hollow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='19'><rect x='1.5' y='1.5' width='8' height='16' fill='%23060a12' fill-opacity='0.35' stroke='%23aecbff' stroke-width='1.6'/></svg>")
+    5 9;
+}
+
+/* Dark only — a phosphor tube has no light mode. Semantic colours are fixed
+   (red = error, green = ok, amber = warning); the accent recolours the beam. */
+:root {
+  --bg: #0a0d14;
+  --text: #d7dce5;
+  --dim: #5c6b80;
+  --ok: #4dff88;
+  --warn: #ffd166;
+  --err: #ff4d4d;
+  --accent: #aecbff; /* warm blue/white — default */
+  --glow: rgba(174, 203, 255, 0.35);
+}
+
+:root[data-accent="green"] {
+  --accent: #33ff66; /* NOSTROMO — runs the tube hot (see crt.css) */
+  --glow: rgba(51, 255, 102, 0.4);
+}
+:root[data-accent="amber"] {
+  --accent: #ffb454;
+  --glow: rgba(255, 180, 84, 0.35);
+}
+:root[data-accent="hot"] {
+  --accent: #ff2a2a; /* SUPERHOT */
+  --glow: rgba(255, 42, 42, 0.4);
+}
+
+/* HDR/wide-gamut: on P3 displays the phosphor runs genuinely hotter than sRGB allows */
+@supports (color: color(display-p3 1 0 0)) {
+  :root {
+    --ok: color(display-p3 0.3 1 0.55);
+    --err: color(display-p3 1 0.28 0.28);
+    --accent: color(display-p3 0.7 0.8 1);
+  }
+  :root[data-accent="green"] {
+    --accent: color(display-p3 0.2 1 0.4);
+  }
+  :root[data-accent="amber"] {
+    --accent: color(display-p3 1 0.72 0.32);
+  }
+  :root[data-accent="hot"] {
+    --accent: color(display-p3 1 0.15 0.15);
+  }
+}
+
+:root {
+  --rowlh: 1.45; /* terminal breathing room between rows */
+}
+:root[data-density="tight"] {
+  --rowlh: 1.32;
+}
+:root[data-density="cozy"] {
+  --rowlh: 1.62;
+}

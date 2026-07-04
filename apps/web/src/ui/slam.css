@@ -1,0 +1,63 @@
+.slam {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: slam-bg 560ms ease-out both;
+}
+.slam--err {
+  --slamc: var(--err);
+}
+.slam--accent {
+  --slamc: var(--accent);
+}
+.slam__word {
+  color: var(--slamc);
+  user-select: none;
+  animation: slam-word 560ms ease-out both;
+}
+/* a soft dim + settle, not a strobe — the word lands, breathes, fades */
+@keyframes slam-bg {
+  0% {
+    background: rgba(0, 0, 0, 0);
+    opacity: 0;
+  }
+  22% {
+    background: rgba(0, 0, 0, 0.34);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes slam-word {
+  0% {
+    transform: scale(1.22);
+    opacity: 0;
+    text-shadow: 0 0 30px var(--slamc);
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+    text-shadow:
+      0 0 24px var(--slamc),
+      0 0 7px var(--slamc);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+    text-shadow: 0 0 16px var(--slamc);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slam {
+    display: none;
+  }
+}

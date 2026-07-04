@@ -1,0 +1,48 @@
+.settings {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.settings__band {
+  color: var(--dim);
+  white-space: pre;
+}
+.settings__list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.settings__hint {
+  color: var(--dim);
+  white-space: pre;
+}
+.setrow {
+  display: block;
+  width: 100%;
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+  color: var(--text);
+}
+.setrow__dots {
+  color: var(--dim);
+}
+.setrow__val {
+  color: var(--accent);
+}
+/* info rows carry no control — quieter value, no cursor affordance */
+.setrow--ro .setrow__val {
+  color: var(--text);
+}
+/* inverse-bar cursor, same language as the nav rail */
+.setrow--sel {
+  background: var(--accent);
+  color: var(--bg);
+}
+.setrow--sel .setrow__dots,
+.setrow--sel .setrow__val {
+  color: var(--bg);
+}

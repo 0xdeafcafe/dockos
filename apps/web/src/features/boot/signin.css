@@ -1,0 +1,144 @@
+/* The sealed console — one clean panel, solid black field, centered. No hex noise, no tear, no
+   chromatic smear: those fought the text for contrast and turned to mush under the CRT barrel. */
+.denied {
+  /* absolute, NOT fixed — fixed escapes the warped tube and renders edge-to-edge; absolute keeps
+     the wall inside .crt__content so it bends and corners like every other page */
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #06010a;
+  animation: denied-in 320ms ease-out both;
+}
+
+/* whole-page red crash — hard-cut inverse flashes and a tearing band on entry, then it clears so
+   the panel stays legible. This is the "big error, uh oh" moment. */
+.denied__crash {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  animation: denied-crash 660ms steps(1) both;
+}
+@keyframes denied-crash {
+  0% {
+    background: var(--err);
+    opacity: 0.92;
+    transform: translateY(0);
+  }
+  10% {
+    opacity: 0;
+  }
+  18% {
+    background: var(--err);
+    opacity: 0.55;
+    transform: translateY(-6px);
+  }
+  26% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  40% {
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(255, 42, 42, 0.55) 0 5px,
+      transparent 5px 13px
+    );
+    opacity: 0.85;
+    transform: translateY(-3px);
+  }
+  52% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  64% {
+    background: rgba(255, 42, 42, 0.4);
+    opacity: 0.6;
+  }
+  76% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.denied__panel {
+  position: relative;
+  width: min(64ch, 94vw);
+  /* SOLID opaque panel so nothing behind bleeds through and doubles the glyphs */
+  background: #12040a;
+  text-shadow: 0 0 10px rgba(255, 42, 42, 0.4);
+}
+/* the Box grid inside is transparent by default — paint it solid too */
+.denied__panel > .ink-box {
+  background: #12040a;
+}
+
+.denied__banner {
+  color: var(--err);
+  text-align: center;
+  align-self: center;
+  user-select: none;
+  text-shadow:
+    0 0 14px rgba(255, 42, 42, 0.5),
+    0 0 4px rgba(255, 42, 42, 0.6);
+  /* a slow, gentle breath — presence without the seizure */
+  animation: denied-pulse 2.6s ease-in-out infinite;
+}
+.denied__gap {
+  height: 1lh;
+}
+.denied__msg {
+  color: #ff9d9d;
+  text-align: center;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.denied__msg--dim {
+  color: var(--dim);
+}
+.denied__actions {
+  display: flex;
+  justify-content: center;
+}
+.denied__actions .ink-act,
+.denied__actions .ink-act__key {
+  color: var(--err);
+}
+.denied__actions .ink-act:hover,
+.denied__actions .ink-act:focus-visible {
+  background: var(--err);
+  color: #12040a;
+}
+.denied__actions .ink-act:hover .ink-act__key,
+.denied__actions .ink-act:focus-visible .ink-act__key {
+  color: #12040a;
+}
+
+@keyframes denied-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes denied-pulse {
+  50% {
+    text-shadow:
+      0 0 22px rgba(255, 42, 42, 0.7),
+      0 0 6px rgba(255, 42, 42, 0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .denied,
+  .denied__banner {
+    animation: none;
+  }
+}

@@ -1,0 +1,57 @@
+.pal__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 180;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 6lh;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* a TUI dialog paints over the cells beneath it; frame is unicode (Box double) */
+.pal {
+  position: static;
+  width: min(64ch, 90vw);
+  background: var(--bg);
+  color: inherit;
+  margin: 0;
+  padding: 0;
+}
+.pal__prompt {
+  display: flex;
+  gap: 1ch;
+  white-space: pre;
+}
+.pal__list {
+  list-style: none;
+  max-height: 14lh;
+  overflow: hidden;
+}
+.pal__item {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 2ch;
+  white-space: pre;
+  color: var(--text);
+}
+.pal__item--sel {
+  background: var(--accent);
+  color: var(--bg);
+}
+.pal__item--sel .pal__hint {
+  color: var(--bg);
+}
+.pal__hint {
+  color: var(--dim);
+}
+.pal__empty {
+  color: var(--dim);
+}
+.pal__foot {
+  display: flex;
+  gap: 2ch;
+  color: var(--dim);
+  white-space: pre;
+}

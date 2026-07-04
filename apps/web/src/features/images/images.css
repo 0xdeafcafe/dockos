@@ -1,0 +1,36 @@
+.images {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.images__band {
+  color: var(--dim);
+  white-space: pre;
+}
+.images__band b {
+  color: var(--text);
+  font-weight: 500;
+}
+.imgrow {
+  display: block;
+  width: 100%;
+  white-space: pre;
+  overflow: hidden;
+  height: 1lh;
+  color: var(--text);
+}
+.imgrow--sel {
+  background: var(--accent);
+  color: var(--bg);
+}
+.imgrow--sel .ink--ok,
+.imgrow--sel .ink--warn,
+.imgrow--sel .ink--err,
+.imgrow--sel .ink--dim {
+  color: var(--bg);
+}
+/* phase-0 action feedback: the row takes the hit */
+.imgrow--pulse {
+  animation: strow-pulse 620ms steps(3);
+}

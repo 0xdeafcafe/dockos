@@ -1,0 +1,454 @@
+.crt {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #04050a;
+}
+
+.crt-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* the tube: a FIXED-size rounded glass panel, centered in the bezel. Capping the size caps
+   the SVG filter's pixel buffer — resizing the window bigger just grows the black bezel and
+   the filter cost stays constant (a real CRT is a fixed size; you don't get an infinite one).
+   This is the one reliable "smaller resolution" lever, since CSS can't cap the filter buffer
+   res directly (a scale-down/up nets to full display res — see SVG-PERF-FINDINGS.md). */
+.crt__screen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 30px / 40px !important;
+  animation: crt-on 0.5s ease-out both;
+  /* isolate so the caret's blend composites within this group against the cached, promoted
+     warp texture — not by re-running the barrel filter every frame */
+  isolation: isolate;
+}
+
+/* The barrel WARP now lives only in the GPU canvas path (Chrome HTML-in-Canvas). The SVG
+   path is warp-free — no `filter` here — because a full-screen SVG filter over live content
+   can't be made buttery. Non-canvas = flat glass + phosphor bloom + scanlines. */
+.crt__warp {
+  position: absolute;
+  inset: 0;
+}
+.crt__content {
+  position: absolute;
+  inset: 1.2% 1%;
+}
+:root[data-crt="off"] .crt__content {
+  inset: 0;
+}
+
+/* phosphor bloom — kept on the SVG path (full + lite): a warm/cool chromatic split + a
+   two-stop halo (currentColor so a glyph blooms in its own colour, dim text glows dimly).
+   This is what gives the flat tube its CRT life now that the barrel is canvas-only. */
+:root[data-crt="full"] .crt__content,
+:root[data-crt="lite"] .crt__content {
+  text-shadow:
+    -0.4px 0 rgba(255, 80, 80, 0.26),
+    0.4px 0 rgba(90, 150, 255, 0.26),
+    0 0 1.5px currentColor,
+    0 0 6px var(--glow);
+}
+:root[data-crt="full"] .crt__content b,
+:root[data-crt="lite"] .crt__content b,
+:root[data-crt="full"] .crt__content .ink--bold,
+:root[data-crt="lite"] .crt__content .ink--bold {
+  text-shadow:
+    -0.4px 0 rgba(255, 80, 80, 0.24),
+    0.4px 0 rgba(90, 150, 255, 0.24),
+    0 0 3px var(--glow);
+}
+/* canvas mode already bakes bloom into the shader — don't double it in CSS */
+.crt--canvas .crt__content {
+  text-shadow: none !important;
+}
+
+/* the block caret — the classic invert caret on BOTH paths now. The blend used to be canvas-only
+   because a mix-blend over the SVG-*filtered* content re-rastered the barrel every frame (the whole
+   SVG lag story); but the flat path no longer carries any filter, so blending is just a cheap GPU
+   composite against the DOM. `.crt__screen { isolation:isolate }` keeps the difference contained to
+   the tube. Canvas mode blends against the GPU texture, same look. */
+.crt__cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 17px;
+  margin: -8px 0 0 -3px;
+  background: #fff;
+  opacity: 1;
+  mix-blend-mode: difference;
+  pointer-events: none;
+  z-index: 60;
+  will-change: transform;
+}
+
+/* slot mask: RGB triads under the scanlines, barely-there */
+.crt__mask {
+  position: absolute;
+  inset: 0;
+  z-index: 48;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to right,
+    rgba(255, 60, 60, 0.03) 0 1px,
+    rgba(60, 255, 60, 0.03) 1px 2px,
+    rgba(60, 90, 255, 0.03) 2px 3px
+  );
+}
+.crt__scan {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0 1px,
+    rgba(0, 0, 0, 0.22) 2px 3px
+  );
+  opacity: 0.45;
+}
+/* Every continuously-animated overlay is promoted to its OWN GPU layer (translateZ) so it
+   composites independently against the CACHED filtered backdrop — it never drags the barrel
+   filter through a re-raster. This is the isolation trick applied everywhere it's reasonable. */
+
+/* static grain — the raster is never perfectly quiet */
+.crt__grain {
+  position: absolute;
+  inset: 0;
+  z-index: 49;
+  pointer-events: none;
+  filter: url(#crtNoise);
+  opacity: 0.02;
+  animation: crt-grain 640ms steps(4) infinite;
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+.crt__sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 42vh;
+  z-index: 51;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--glow), transparent);
+  opacity: 0.06;
+  animation: crt-sweep 6s linear infinite;
+  transform: translateZ(0);
+  will-change: transform;
+}
+/* glass reflections (SVG layer) + the drifting room-light blob — held dark until the tube
+   has finished its power-on, so the sheen doesn't stretch with the collapse flash */
+.crt__reflect {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 55;
+  pointer-events: none;
+  /* NO mix-blend-mode. A blend layer reads the filtered backdrop, so its continuously
+     drifting blob forced the barrel filter to re-run EVERY frame — the "always laggy".
+     Plain alpha composites against the cached filter texture: free. */
+  opacity: 0;
+  animation: crt-reflect-in 1.4s ease-in 1.7s both;
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+.crt__blob {
+  animation: crt-blob 45s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes crt-reflect-in {
+  to {
+    opacity: 0.55;
+  }
+}
+.crt__vign {
+  position: absolute;
+  inset: 0;
+  z-index: 52;
+  pointer-events: none;
+  /* tube falloff PLUS an edge-hugging inner darken: fades the rounded clip line into the
+     bezel so the border-radius reads as glass curvature, not a hard cut */
+  background:
+    radial-gradient(135% 135% at 50% 50%, transparent 46%, rgba(0, 0, 0, 0.9) 100%),
+    linear-gradient(to right, rgba(0, 0, 0, 0.6), transparent 2%, transparent 98%, rgba(0, 0, 0, 0.6)),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 1.6%, transparent 98.4%, rgba(0, 0, 0, 0.55));
+}
+.crt__flick {
+  position: absolute;
+  inset: 0;
+  z-index: 53;
+  pointer-events: none;
+  /* no mix-blend-mode — same reason as .crt__reflect: it read the filtered backdrop and
+     re-ran the barrel every frame. Plain low-opacity glow instead. */
+  background: var(--glow);
+  opacity: 0;
+  animation: crt-flick 5s infinite steps(1);
+  transform: translateZ(0);
+  will-change: opacity;
+}
+.crt__glitch {
+  position: absolute;
+  inset: 0;
+  z-index: 54;
+  pointer-events: none;
+  opacity: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 3px,
+    rgba(255, 255, 255, 0.03) 3px 4px
+  );
+  /* rarer + gentler — the tear is an event, not a nervous tic */
+  animation: crt-glitch 17s infinite;
+}
+
+/* NOSTROMO MODE — the alien-green accent runs the tube hotter */
+:root[data-accent="green"] .crt__flick {
+  animation: crt-flick-hot 2.6s infinite steps(1);
+}
+:root[data-accent="green"] .crt__content {
+  animation: crt-shimmer 0.14s infinite;
+}
+
+/* DEGAUSS — cycling the accent gives the field one soft settle (class set by ThemeProvider).
+   Kept gentle: a brief brightness bloom + a hair of shiver, no hue spin or hard shake. */
+:root.crt-degauss .crt {
+  animation: crt-degauss 320ms ease-out;
+}
+@keyframes crt-degauss {
+  0% {
+    transform: scale(1.006, 0.996);
+    filter: brightness(1.28) saturate(1.15);
+  }
+  55% {
+    transform: scale(0.999, 1.002);
+    filter: brightness(1.06);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+
+/* FIDELITY — :root[data-crt]:
+   · lite (DEFAULT): cheap composited layers only — rounded glass, scanlines, vignette,
+     mask, block cursor. NO SVG filter, so live updates stay smooth.
+   · full: the whole optical pipeline — barrel bend, convergence, bloom, reflections,
+     grain, sweep, flicker, glitch. Heavier; for showcase / stills.
+   · off: flat panel, nothing. */
+
+/* LITE hides everything animated/expensive; keeps scan + vign + mask (static overlays) */
+.crt__grain,
+.crt__sweep,
+.crt__reflect,
+.crt__flick,
+.crt__glitch {
+  display: none;
+}
+
+/* The SVG barrel warp (CrtFilters' #crt-warp) engages on the non-canvas path whenever the tube is
+   ON — lite OR full — so browsers without the HTML-in-Canvas flag still get the real bend (OFF is
+   the only flat state). `.crt__warp` is rendered ONLY on the non-canvas branch, so this never
+   touches canvas mode. Promoted to its own compositing layer so the filter rasterizes once into a
+   cached texture and is reused, not re-run every frame (SVG-PERF-FINDINGS.md #1). The bend is
+   geometry, not motion, so it stays under prefers-reduced-motion. */
+:root[data-crt="full"] .crt__warp,
+:root[data-crt="lite"] .crt__warp {
+  filter: url(#crt-warp);
+  will-change: transform;
+  transform: translateZ(0);
+}
+/* zoom the content a hair so the barrel's edge pull-in doesn't reveal a gap at the frame. Scoped to
+   `.crt__warp >` so it applies ONLY on the non-canvas path (in canvas mode the content isn't inside
+   `.crt__warp`, and scaling it would distort the captured texture). */
+:root[data-crt="full"] .crt__warp > .crt__content,
+:root[data-crt="lite"] .crt__warp > .crt__content {
+  transform: scale(1.02);
+}
+:root[data-crt="full"] .crt__grain,
+:root[data-crt="full"] .crt__sweep,
+:root[data-crt="full"] .crt__reflect,
+:root[data-crt="full"] .crt__flick,
+:root[data-crt="full"] .crt__glitch {
+  display: block;
+}
+
+:root[data-crt="off"] .crt__content {
+  inset: 0;
+}
+:root[data-crt="off"] .crt__screen {
+  border-radius: 0 !important;
+  animation: none;
+}
+:root[data-crt="off"] .crt__mask,
+:root[data-crt="off"] .crt__scan,
+:root[data-crt="off"] .crt__vign {
+  display: none;
+}
+
+/* classic tube power-on: a bright dot at dead center → horizontal line → vertical bloom */
+@keyframes crt-on {
+  0% {
+    transform: scale(0.004, 0.003);
+    filter: brightness(9);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(0.06, 0.004);
+    filter: brightness(8);
+    opacity: 1;
+  }
+  42% {
+    transform: scale(1, 0.004);
+    filter: brightness(6);
+  }
+  55% {
+    transform: scale(1, 0.008);
+    filter: brightness(4);
+  }
+  74% {
+    transform: scale(1, 1.04);
+    filter: brightness(2.2);
+  }
+  84% {
+    transform: scale(1, 0.99);
+    filter: brightness(1.4);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+    opacity: 1;
+  }
+}
+@keyframes crt-sweep {
+  0% {
+    top: -42vh;
+  }
+  100% {
+    top: 100vh;
+  }
+}
+@keyframes crt-grain {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0.016;
+  }
+  25% {
+    transform: translate(-6px, 3px);
+    opacity: 0.028;
+  }
+  50% {
+    transform: translate(4px, -5px);
+    opacity: 0.012;
+  }
+  75% {
+    transform: translate(-2px, -2px);
+    opacity: 0.024;
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.016;
+  }
+}
+@keyframes crt-blob {
+  0% {
+    transform: translate(180px, 520px);
+  }
+  30% {
+    transform: translate(320px, 380px);
+  }
+  55% {
+    transform: translate(680px, 460px);
+  }
+  80% {
+    transform: translate(460px, 600px);
+  }
+  100% {
+    transform: translate(180px, 520px);
+  }
+}
+@keyframes crt-flick {
+  0%,
+  96%,
+  100% {
+    opacity: 0;
+  }
+  97% {
+    opacity: 0.025;
+  }
+  98.5% {
+    opacity: 0.012;
+  }
+}
+@keyframes crt-flick-hot {
+  0%,
+  78%,
+  100% {
+    opacity: 0.015;
+  }
+  80% {
+    opacity: 0.07;
+  }
+  83% {
+    opacity: 0.02;
+  }
+  86% {
+    opacity: 0.09;
+  }
+  89% {
+    opacity: 0.03;
+  }
+}
+@keyframes crt-shimmer {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.965;
+  }
+}
+@keyframes crt-glitch {
+  0%,
+  92%,
+  100% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  93% {
+    opacity: 0.6;
+    transform: translateX(-2px);
+  }
+  94% {
+    opacity: 0.3;
+    transform: translateX(3px);
+  }
+  95% {
+    opacity: 0.5;
+    transform: translateX(-1px);
+  }
+  96% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt__screen,
+  .crt__content,
+  .crt__warp {
+    animation: none;
+  }
+  /* even in FULL, reduced-motion drops every animated overlay layer */
+  :root[data-crt="full"] .crt__sweep,
+  :root[data-crt="full"] .crt__flick,
+  :root[data-crt="full"] .crt__glitch,
+  :root[data-crt="full"] .crt__grain,
+  :root[data-crt="full"] .crt__reflect {
+    display: none;
+  }
+}

@@ -1,0 +1,73 @@
+@import "./tokens.css";
+
+/* THE TUI RULES — enforced globally, no exceptions:
+   · only text · only unicode structure · ONE font size (big = block art)
+   · padding cell-aligned (ch horizontal, lh vertical) · no CSS borders/radius/shadows */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-size: 14px !important;
+  font-family: var(--font-mono) !important;
+  letter-spacing: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  cursor: none; /* one warped block pointer for the whole tube (CrtScene) */
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  line-height: var(--rowlh);
+  /* thicker phosphor via font-weight only. NOT -webkit-text-stroke: that outlines every
+     glyph and is very expensive to re-raster — and the whole UI re-rasters into the CRT
+     filter's source buffer on each data tick, so the stroke was a real per-tick cost. */
+  font-weight: 600;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeSpeed;
+  overflow: hidden;
+  cursor: none; /* the warped block cursor (CrtScene) stands in for the OS pointer */
+}
+
+pre {
+  white-space: pre;
+  line-height: var(--rowlh); /* block art sits on the same row grid as everything else */
+}
+
+/* keyboard focus speaks the same language as hover: inverse video, no halos */
+button:focus-visible,
+[role="option"]:focus-visible {
+  outline: none;
+  background: var(--accent);
+  color: var(--bg);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  text-align: left;
+}
+
+input {
+  font: inherit;
+  color: inherit;
+  background: none;
+  outline: none;
+  caret-color: transparent; /* the ▮ block cursor is rendered by TuiInput */
+}

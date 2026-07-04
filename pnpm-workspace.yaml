@@ -1,0 +1,7 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 11 gates postinstall build scripts. esbuild (Vite's bundler) needs its native binary built.
+allowBuilds:
+  esbuild: true
